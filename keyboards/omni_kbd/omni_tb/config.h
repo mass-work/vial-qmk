@@ -1,0 +1,66 @@
+// Copyright 2025 mass
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#define MAX_LCD_LAYER 3
+#define MAX_LCD_CATEGORY 2
+#define KEYCODE_SIZE 72
+#define TOUCH_LCD_WIDTH  240
+#define TOUCH_LCD_HEIGHT 240
+
+#define MATRIX_ROWS 32
+#define MATRIX_COLS 6
+#define MATRIX_ROW_PINS { GP11, GP12, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN}
+#define MATRIX_COL_PINS { GP0, GP2, GP3, NO_PIN, NO_PIN, NO_PIN}
+
+#define SPI_DRIVER SPID0
+#define SPI_SCK_PIN GP6
+#define SPI_MISO_PIN GP4
+#define SPI_MOSI_PIN GP7
+
+#define PMW33XX_CS_PINS { GP5, GP1 }
+#define PMW33XX_CLOCK_SPEED 2000000
+
+#define CS_PIN GP13 //17
+#define DC_PIN GP10 //16
+#define RST_PIN GP14 //18
+#define BLK_PIN GP15 //19
+#define QUANTUM_PAINTER_SUPPORTS_NATIVE_COLORS TRUE
+#define QUANTUM_PAINTER_NUM_IMAGES 300
+
+#define I2C_DRIVER I2CD0
+#define I2C1_SDA_PIN GP8 //20
+#define I2C1_SCL_PIN GP9 //21
+#define INT_PIN GP26 //22
+#define TOUCH_RST_PIN GP29 //26
+
+#define GC9A01_NUM_DEVICES 1
+
+#define POINTING_DEVICE_AUTO_MOUSE_ENABLE
+#ifdef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+    #define process_tb_gesture_report process_high_res_scroll_report
+#else
+    #define process_tb_gesture_report process_tap_report
+#endif
+
+#define TOUCH_GESTURE_VKEY_ENABLE
+#define TAP_CODE_DELAY 10
+
+// #define DRV2605L_FB_ERM_LRA 0
+// #define DRV2605L_FB_BRAKEFACTOR 6
+// #define DRV2605L_FB_LOOPGAIN    0
+// #define DRV2605L_RATED_VOLTAGE 2
+// #define DRV2605L_ V_PEAK        3
+// #define HAPTIC_DEFAULT_MODE    6
+
+#define DRV2605L_FB_ERM_LRA 1
+#define DRV2605L_FB_BRAKEFACTOR 6
+#define DRV2605L_FB_LOOPGAIN 0
+#define DRV2605L_RATED_VOLTAGE 1
+#define DRV2605L_V_PEAK 2
+#define DRV2605L_V_RMS 1
+#define DRV2605L_F_LRA 170
+#define HAPTIC_DEFAULT_MODE 26
+
+#define DISPLAY_MODE_DEFAULT DISPLAY_MODE_SWIPE_GESTURE

@@ -4,6 +4,7 @@
 #include "config.h"
 #include <math.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "qp_internal.h"
 #include "qp_comms.h"
 #include "qp_draw.h"
@@ -250,4 +251,493 @@ bool qp_round_rect(painter_device_t dev,
 
     qp_comms_stop(dev);
     return ok;
+}
+
+// add ellipse_filled
+
+#ifndef M_PI
+#    define M_PI 3.14159265358979323846
+#endif
+
+bool qp_rotated_ellipse_filled(painter_device_t device, uint16_t centerx, uint16_t centery, uint16_t width, uint16_t height, float angle_deg, uint8_t hue, uint8_t sat, uint8_t val) {
+    qp_dprintf("qp_rotated_ellipse_filled: entry\n");
+
+    painter_driver_t *driver = (painter_driver_t *)device;
+    if (!driver || !driver->validate_ok) {
+        qp_dprintf("qp_rotated_ellipse_filled: fail (validation_ok == false)\n");
+        return false;
+    }
+
+    if (width == 0 || height == 0) {
+        qp_dprintf("qp_rotated_ellipse_filled: fail (width/height == 0)\n");
+        return false;
+    }
+
+    float a = (float)width  * 0.5f;
+    float b = (float)height * 0.5f;
+    float rad = angle_deg * (float)M_PI / 180.0f;
+    float c   = cosf(rad);
+    float s   = sinf(rad);
+    float a2 = a * a;
+    float b2 = b * b;
+    float inv_a2 = 1.0f / a2;
+    float inv_b2 = 1.0f / b2;
+
+    int16_t x_extent = (int16_t)ceilf(sqrtf(a2 * c * c + b2 * s * s));
+    int16_t y_extent = (int16_t)ceilf(sqrtf(a2 * s * s + b2 * c * c));
+
+    uint16_t max_span = (uint16_t)(x_extent * 2 + 1);
+    qp_internal_fill_pixdata(device, max_span, hue, sat, val);
+
+    if (!qp_comms_start(device)) {
+        qp_dprintf("qp_rotated_ellipse_filled: fail (could not start comms)\n");
+        return false;
+    }
+
+    bool ret = true;
+    float A = (c * c) * inv_a2 + (s * s) * inv_b2;
+    float B_base = 2.0f * c * s * (inv_a2 - inv_b2);
+    float C_base = (s * s) * inv_a2 + (c * c) * inv_b2;
+
+    for (int16_t dy = -y_extent; dy <= y_extent; dy++) {
+        float fy = (float)dy;
+
+        float B = B_base * fy;
+        float C = C_base * fy * fy - 1.0f;
+
+        float D = B * B - 4.0f * A * C;   // 判別式
+        if (D < 0.0f) {
+            continue;
+        }
+
+        float sqrtD = sqrtf(D);
+
+        float dx_min_f = (-B - sqrtD) / (2.0f * A);
+        float dx_max_f = (-B + sqrtD) / (2.0f * A);
+
+        int16_t dx_min = (int16_t)ceilf(dx_min_f);
+        int16_t dx_max = (int16_t)floorf(dx_max_f);
+
+        if (dx_min > dx_max) {
+            continue;
+        }
+
+        int16_t y  = (int16_t)centery + dy;
+        int16_t xl = (int16_t)centerx + dx_min;
+        int16_t xr = (int16_t)centerx + dx_max;
+
+        if (!qp_internal_fillrect_helper_impl(device, xl, y, xr, y)) {
+            ret = false;
+            break;
+        }
+    }
+
+    qp_comms_stop(device);
+    qp_dprintf("qp_rotated_ellipse_filled: %s\n", ret ? "ok" : "fail");
+    return ret;
+}
+
+// add riangle
+typedef struct {
+    float x;
+    float y;
+} qp_ptf_t;
+
+static inline qp_ptf_t qp_rotate_translate_pt(float x, float y,
+                                              float c, float s,
+                                              float tx, float ty) {
+    qp_ptf_t p;
+    p.x = tx + x * c - y * s;
+    p.y = ty + x * s + y * c;
+    return p;
+}
+
+static bool qp_plot_thick_pixel(painter_device_t device,
+                                int16_t x, int16_t y,
+                                uint8_t stroke_w) {
+    if (stroke_w == 0) {
+        stroke_w = 1;
+    }
+
+    int8_t r = (int8_t)(stroke_w / 2);
+
+    for (int8_t oy = -r; oy <= r; oy++) {
+        for (int8_t ox = -r; ox <= r; ox++) {
+            int16_t px = x + ox;
+            int16_t py = y + oy;
+
+            if (px < 0 || px >= 240 || py < 0 || py >= 240) {
+                continue;
+            }
+
+            if (!qp_internal_setpixel_impl(device, px, py)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool qp_line_thick_internal(painter_device_t device,
+                                   int16_t x0, int16_t y0,
+                                   int16_t x1, int16_t y1,
+                                   uint8_t stroke_w) {
+    int16_t dx = abs(x1 - x0);
+    int16_t sx = (x0 < x1) ? 1 : -1;
+    int16_t dy = -abs(y1 - y0);
+    int16_t sy = (y0 < y1) ? 1 : -1;
+    int16_t err = dx + dy;
+
+    while (true) {
+        if (!qp_plot_thick_pixel(device, x0, y0, stroke_w)) {
+            return false;
+        }
+
+        if (x0 == x1 && y0 == y1) {
+            break;
+        }
+
+        int16_t e2 = 2 * err;
+
+        if (e2 >= dy) {
+            err += dy;
+            x0 += sx;
+        }
+
+        if (e2 <= dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+
+    return true;
+}
+
+static inline float qp_edge_fn(qp_ptf_t a, qp_ptf_t b,
+                               float px, float py) {
+    return (px - a.x) * (b.y - a.y) - (py - a.y) * (b.x - a.x);
+}
+
+bool qp_triangle_rotated(painter_device_t device,
+                         int16_t centerx, int16_t centery,
+                         uint16_t width, uint16_t height,
+                         float angle_deg,
+                         uint8_t hue, uint8_t sat, uint8_t val,
+                         bool filled,
+                         uint8_t stroke_w) {
+    painter_driver_t *driver = (painter_driver_t *)device;
+    if (!driver || !driver->validate_ok) {
+        return false;
+    }
+
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    if (stroke_w == 0) {
+        stroke_w = 1;
+    }
+
+    // 基準形は「▽」
+    // angle_deg = 0 で下向き
+    float hw = (float)width * 0.5f;
+    float hh = (float)height * 0.5f;
+
+    float rad = angle_deg * (float)M_PI / 180.0f;
+    float c   = cosf(rad);
+    float s   = sinf(rad);
+
+    qp_ptf_t v0 = qp_rotate_translate_pt( 0.0f,  hh, c, s, centerx, centery); // 下頂点
+    qp_ptf_t v1 = qp_rotate_translate_pt(-hw,   -hh, c, s, centerx, centery); // 左上
+    qp_ptf_t v2 = qp_rotate_translate_pt( hw,   -hh, c, s, centerx, centery); // 右上
+
+    qp_internal_fill_pixdata(device, 1, hue, sat, val);
+
+    if (!qp_comms_start(device)) {
+        return false;
+    }
+
+    bool ret = true;
+
+    if (filled) {
+        float min_x_f = fminf(v0.x, fminf(v1.x, v2.x));
+        float max_x_f = fmaxf(v0.x, fmaxf(v1.x, v2.x));
+        float min_y_f = fminf(v0.y, fminf(v1.y, v2.y));
+        float max_y_f = fmaxf(v0.y, fmaxf(v1.y, v2.y));
+
+        int16_t min_x = (int16_t)floorf(min_x_f);
+        int16_t max_x = (int16_t)ceilf(max_x_f);
+        int16_t min_y = (int16_t)floorf(min_y_f);
+        int16_t max_y = (int16_t)ceilf(max_y_f);
+
+        float area = qp_edge_fn(v0, v1, v2.x, v2.y);
+        bool area_positive = (area >= 0.0f);
+
+        for (int16_t y = min_y; y <= max_y; y++) {
+            for (int16_t x = min_x; x <= max_x; x++) {
+                if (x < 0 || x >= 240 || y < 0 || y >= 240) {
+                    continue;
+                }
+
+                float px = (float)x + 0.5f;
+                float py = (float)y + 0.5f;
+
+                float e0 = qp_edge_fn(v0, v1, px, py);
+                float e1 = qp_edge_fn(v1, v2, px, py);
+                float e2 = qp_edge_fn(v2, v0, px, py);
+
+                bool inside = area_positive
+                    ? (e0 >= 0.0f && e1 >= 0.0f && e2 >= 0.0f)
+                    : (e0 <= 0.0f && e1 <= 0.0f && e2 <= 0.0f);
+
+                if (inside && !qp_internal_setpixel_impl(device, x, y)) {
+                    ret = false;
+                    goto out;
+                }
+            }
+        }
+    } else {
+        if (!qp_line_thick_internal(device,
+                                    (int16_t)lroundf(v0.x), (int16_t)lroundf(v0.y),
+                                    (int16_t)lroundf(v1.x), (int16_t)lroundf(v1.y),
+                                    stroke_w) ||
+            !qp_line_thick_internal(device,
+                                    (int16_t)lroundf(v1.x), (int16_t)lroundf(v1.y),
+                                    (int16_t)lroundf(v2.x), (int16_t)lroundf(v2.y),
+                                    stroke_w) ||
+            !qp_line_thick_internal(device,
+                                    (int16_t)lroundf(v2.x), (int16_t)lroundf(v2.y),
+                                    (int16_t)lroundf(v0.x), (int16_t)lroundf(v0.y),
+                                    stroke_w)) {
+            ret = false;
+        }
+    }
+
+out:
+    qp_comms_stop(device);
+    return ret;
+}
+
+
+// add mni mask
+
+
+//---------------------------
+
+typedef struct {
+    uint8_t width;
+    uint8_t height;
+    const uint32_t *rows;
+} mono_glyph_t;
+
+static const uint32_t glyph_m_rows[28] = {
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b1110000111110000000111110000,
+    0b1110001111111100001111111100,
+    0b1110011111111100011111111110,
+    0b1110111111111110111111111111,
+    0b111111111111111111111111111,
+    0b1111110000111111100000111111,
+    0b1111110000011111100000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b1111100000011111000000011111,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+};
+
+static const uint32_t glyph_n_rows[28] = {
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000111000011111000000000000,
+    0b0000111000111111110000000000,
+    0b0000111001111111111000000000,
+    0b0000111011111111111100000000,
+    0b0000111111111111111100000000,
+    0b0000111111000011111100000000,
+    0b0000111111000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000111110000001111100000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+};
+
+static const uint32_t glyph_i_rows[28] = {
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b1111000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+    0b0000000000000000000000000000,
+};
+
+static const mono_glyph_t glyph_m = {28, 28, glyph_m_rows};
+static const mono_glyph_t glyph_n = {28, 28, glyph_n_rows};
+static const mono_glyph_t glyph_i = {28, 28, glyph_i_rows};
+
+static bool glyph_get_pixel(const mono_glyph_t *g, uint8_t x, uint8_t y) {
+    if (!g || x >= g->width || y >= g->height) {
+        return false;
+    }
+
+    uint32_t row = g->rows[y];
+    uint8_t bit = (g->width - 1) - x;
+    return ((row >> bit) & 0x01U) != 0;
+}
+
+static bool mni_get_pixel(uint8_t x, uint8_t y) {
+    if (y >= 28) {
+        return false;
+    }
+
+    // m: x = 0..19
+    if (x <= 27) {
+        return glyph_get_pixel(&glyph_m, x, y);
+    }
+
+    // spacing: x = 20..23
+    // if (x >= 24 && x <= 27) {
+    //     return false;
+    // }
+
+    // n: x = 24..43
+    if (x >= 28 && x <= 51) {
+        return glyph_get_pixel(&glyph_n, x - 28, y);
+    }
+
+    // // spacing: x = 44..47
+    // if (x >= 52 && x <= 55) {
+    //     return false;
+    // }
+
+    // i: x = 48..67
+    if (x >= 52 && x <= 75) {
+        return glyph_get_pixel(&glyph_i, x - 52, y);
+    }
+
+    return false;
+}
+
+bool qp_draw_mni_rotated_solid(painter_device_t device,
+                               int16_t centerx, int16_t centery,
+                               float angle_deg,
+                               float scale,
+                               uint8_t hue, uint8_t sat, uint8_t val) {
+    qp_dprintf("qp_draw_mni_rotated_solid: entry\n");
+
+    painter_driver_t *driver = (painter_driver_t *)device;
+    if (!driver || !driver->validate_ok) {
+        qp_dprintf("qp_draw_mni_rotated_solid: fail (validation_ok == false)\n");
+        return false;
+    }
+
+    if (scale <= 0.0f) {
+        scale = 1.0f;
+    }
+
+    const int16_t src_w = 76;
+    const int16_t src_h = 28;
+
+    float scaled_w = src_w * scale;
+    float scaled_h = src_h * scale;
+
+    float rad = angle_deg * (float)M_PI / 180.0f;
+    float c   = cosf(rad);
+    float s   = sinf(rad);
+
+    int16_t x_extent = (int16_t)ceilf((fabsf(scaled_w * c) + fabsf(scaled_h * s)) * 0.5f);
+    int16_t y_extent = (int16_t)ceilf((fabsf(scaled_w * s) + fabsf(scaled_h * c)) * 0.5f);
+
+    qp_internal_fill_pixdata(device, 1, hue, sat, val);
+
+    if (!qp_comms_start(device)) {
+        qp_dprintf("qp_draw_mni_rotated_solid: fail (could not start comms)\n");
+        return false;
+    }
+
+    bool ret = true;
+
+    for (int16_t dy = -y_extent; dy <= y_extent; dy++) {
+        for (int16_t dx = -x_extent; dx <= x_extent; dx++) {
+            float src_local_x =  (float)dx * c + (float)dy * s;
+            float src_local_y = -(float)dx * s + (float)dy * c;
+
+            float sx = src_local_x + scaled_w * 0.5f;
+            float sy = src_local_y + scaled_h * 0.5f;
+
+            if (sx < 0.0f || sy < 0.0f || sx >= scaled_w || sy >= scaled_h) {
+                continue;
+            }
+
+            uint8_t src_px = (uint8_t)floorf(sx / scale);
+            uint8_t src_py = (uint8_t)floorf(sy / scale);
+
+            if (!mni_get_pixel(src_px, src_py)) {
+                continue;
+            }
+
+            if (!qp_internal_setpixel_impl(device, centerx + dx, centery + dy)) {
+                ret = false;
+                goto out;
+            }
+        }
+    }
+
+out:
+    qp_comms_stop(device);
+    qp_dprintf("qp_draw_mni_rotated_solid: %s\n", ret ? "ok" : "fail");
+    return ret;
 }

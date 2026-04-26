@@ -3,18 +3,18 @@
 
 #pragma once
 
-#define GP50 50U
-#define GP51 51U
-#define GP52 52U
-#define GP53 53U
-#define GP54 54U
-#define GP55 55U
-#define GP56 56U
-#define GP57 57U
-#define GP58 58U
-#define GP59 59U
-#define GP60 60U
-#define GP61 61U
+// #define GP50 50U
+// #define GP51 51U
+// #define GP52 52U
+// #define GP53 53U
+// #define GP54 54U
+// #define GP55 55U
+// #define GP56 56U
+// #define GP57 57U
+// #define GP58 58U
+// #define GP59 59U
+// #define GP60 60U
+// #define GP61 61U
 
 #define MAX_LCD_LAYER 3
 #define MAX_LCD_CATEGORY 2
@@ -24,7 +24,9 @@
 
 #define MATRIX_ROWS 32
 #define MATRIX_COLS 6
-#define MATRIX_ROW_PINS { GP11, GP12, GP13, GP14, GP50, GP51, GP52, GP53, GP54, GP55, GP56, GP57, GP58, GP59, GP60, GP61}
+// #define MATRIX_ROW_PINS { GP11, GP12, GP13, GP14, GP50, GP51, GP52, GP53, GP54, GP55, GP56, GP57, GP58, GP59, GP60, GP61}
+// #define MATRIX_COL_PINS { GP0, GP2, GP3, GP8, GP9, GP10}
+#define MATRIX_ROW_PINS { GP11, GP12, GP13, GP14, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN}
 #define MATRIX_COL_PINS { GP0, GP2, GP3, GP8, GP9, GP10}
 
 #define SPI_DRIVER SPID0
@@ -58,3 +60,5 @@
 #define WHEEL_EXTENDED_REPORT
 
 #define TAP_CODE_DELAY 10
+
+#define DISPLAY_MODE_DEFAULT DISPLAY_MODE_TOUCH_KEY

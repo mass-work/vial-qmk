@@ -12,7 +12,7 @@
 #include "matrix.h"
 #include "config.h"
 #include "dynamic_keymap.h"
-#include "omni_cs.h"
+#include "omni_tb.h"
 #include "os_detection.h"
 
 #include "../common/trackball_omni.h"
@@ -103,6 +103,25 @@ void matrix_init_user(void) {
     load_virtual_keys();
 }
 
+void bootmagic_scan(void) {
+    matrix_scan();
+    wait_ms(20);
+    matrix_scan();
+
+    wait_ms(500);
+    matrix_scan();
+
+    uint16_t row = matrix_get_row(0);
+
+    if ( (row & (1 << 0)) &&
+         (row & (1 << 1)) &&
+         (row & (1 << 2)) ) {
+        bootloader_jump();
+    }
+}
+
+
+
 void keyboard_post_init_kb(void) {
     if (!eeconfig_is_enabled()) {
         eeconfig_init();
@@ -135,14 +154,16 @@ void keyboard_post_init_kb(void) {
 
     wait_ms(300); 
     sync_default_layer_to_os();
-
 }
+
 
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     current_layer = get_highest_layer(layer_state);
     if(display_mode == DISPLAY_MODE_SWIPE_GESTURE) {
         if (current_layer != pre_layer) {
-            swipe_gesture_main_view_update(current_layer);
+            #    ifndef TOUCH_GESTURE_VKEY_ENABLE
+                swipe_gesture_main_view_update(current_layer);
+            #    endif
         }
     } else if (display_mode ==  DISPLAY_MODE_KEY_MATRIX) {
         if (!get_auto_mouse_enable()) {
@@ -173,13 +194,13 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     if (tb_mode_r == TRACKBALL_CURSOR){
         process_cursor_report(&mouse_report, report0, speed_adjust1, slope_factor1, 1, 1, 2);
     } else if (tb_mode_r == TRACKBALL_TAP) {
-        process_high_res_scroll_report(&mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0);
+        process_tb_gesture_report(&mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0, is_haptic);
     }
 
     if (tb_mode_l == TRACKBALL_CURSOR){
         process_cursor_report(&mouse_report, report1, speed_adjust1, slope_factor1, -1, -1, 2);
     } else if (tb_mode_l == TRACKBALL_TAP) {
-        process_high_res_scroll_report(&mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0);
+        process_tb_gesture_report(&mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_270, is_haptic);
     }
 
     if (ENABLE_TOUCH_UPDATE == 1) {
@@ -198,7 +219,8 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     }
     if (!is_first_frame) {
         if (is_second_frame) {
-            draw_lcd_layer_category_images();
+            // draw_lcd_layer_category_images();
+            display_redraw();
             qp_flush(display);
             is_second_frame = false;
         }
@@ -267,6 +289,67 @@ void housekeeping_task_user(void) {
     }
 }
 
+static const uint8_t display_mode_order[] = {
+    DISPLAY_MODE_TOUCH_KEY,
+    DISPLAY_MODE_TRACKBALL_TUNING,
+    DISPLAY_MODE_SWIPE_GESTURE,
+    DISPLAY_MODE_STATUS1,
+};
+
+static uint8_t display_mode_index = 2;
+
+static void apply_display_mode(uint8_t mode) {
+    display_mode = mode;
+
+    switch (mode) {
+        case DISPLAY_MODE_TOUCH_KEY:
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
+
+        case DISPLAY_MODE_TRACKBALL_TUNING:
+            show_trackball_tuning_mode();
+            break;
+
+        case DISPLAY_MODE_SWIPE_GESTURE:
+            
+            #ifdef TOUCH_GESTURE_VKEY_ENABLE
+                // swipe_gesture_main_view_update(current_lcd_layer);
+                swipe_gesture_swipe_omni_logo();
+                // swipe_gesture_vkey_update();
+            #else
+                draw_background_all();
+                swipe_gesture_layer_view_update();
+                swipe_gesture_base_view_update();
+                swipe_gesture_main_view_update(current_lcd_layer);
+            #endif
+            break;
+
+        case DISPLAY_MODE_STATUS1:
+            status_view_init(display, noto9_font);
+            break;
+    }
+
+    // DISPLAY_MODE_SWIPE_GESTUREだけ追加処理が必要ならここでまとめてやる
+    if (mode == DISPLAY_MODE_SWIPE_GESTURE) {
+        save_omni_color_config();
+        draw_background_all();
+
+        #ifdef TOUCH_GESTURE_VKEY_ENABLE
+            // swipe_gesture_main_view_update(current_lcd_layer);
+            // swipe_gesture_vkey_update();
+            swipe_gesture_swipe_omni_logo();
+        #else
+            swipe_gesture_layer_view_update();
+            swipe_gesture_base_view_update();
+            swipe_gesture_main_view_update(current_lcd_layer);
+        #endif
+    }
+}
+
+
+#include "haptic.h"
+bool is_haptic = true;
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!record->event.pressed) {
         tb_mode_l = TRACKBALL_TAP;
@@ -276,14 +359,14 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case KC_hue_bg_UP:
             hue_bg = (hue_bg + 16) % 256;
-
+            // is_haptic = true;
             // uprintf("------------------DF--------------------\n");
             // uprintf("x : %d, y : %d\n", touch_x, touch_y);
             // uprintf("px: %d, py: %d\n", pre_touch_x, pre_touch_y);
             break;
         case KC_hue_bg_DOWN:
+            // is_haptic = false;
             hue_bg = (hue_bg >= 16) ? (hue_bg - 16) : (hue_bg + 240); 
- 
             break;
         case KC_sat_bg_UP:
             sat_bg = (sat_bg + 16 <= 254) ? sat_bg + 16 : 254;
@@ -343,43 +426,27 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case TB_L_MODE_TOGGLE:
             tb_mode_l = TRACKBALL_CURSOR;
             return false;
-        case KC_DP_TOUCH_KEY:
-            display_mode =  DISPLAY_MODE_TOUCH_KEY;
-            draw_background_all_black();
-            draw_lcd_layer_category_images();
-            break;
-        case KC_DP_TB_TUNE: 
-            display_mode =  DISPLAY_MODE_TRACKBALL_TUNING;
-            show_trackball_tuning_mode();
-            break;
-        case KC_DP_SWIPE_GESTURE:
-            display_mode =  DISPLAY_MODE_SWIPE_GESTURE;
-            draw_background_all();
-            swipe_gesture_layer_view_update();
-            swipe_gesture_base_view_update();
-            swipe_gesture_main_view_update(current_lcd_layer);
-            break;
-        case KC_DP_KEY_MAT:
-            display_mode =  DISPLAY_MODE_KEY_MATRIX;
-            draw_key_matrix(display, roboto_mono16, st2_mono16, current_layer);
-            break;
-        case KC_DP_STAT1:
-            display_mode =  DISPLAY_MODE_STATUS1;
-            status_view_init(display, noto9_font);
-            break;
+        case KC_DP_MODE_CYCLE: {
+            display_mode_index++;
+            if (display_mode_index >= (sizeof(display_mode_order) / sizeof(display_mode_order[0]))) {
+                display_mode_index = 0;
+            }
+            uint8_t next_mode = display_mode_order[display_mode_index];
+            apply_display_mode(next_mode);
+            return false;
+        }
 
         default:
             return true;
     }
+
     if(display_mode == DISPLAY_MODE_SWIPE_GESTURE) {
         save_omni_color_config();
-        draw_background_all();
-        swipe_gesture_base_view_update();
-        swipe_gesture_main_view_update(current_lcd_layer);
-        swipe_gesture_layer_view_update();
+        display_redraw();
     }
     return false;
 }
+
 
 void suspend_power_down_user(void){
     lcd_is_on = power_off_lcd();
@@ -392,11 +459,12 @@ void __wrap_dynamic_keymap_set_keycode(uint8_t layer, uint8_t row, uint8_t col, 
     __real_dynamic_keymap_set_keycode(layer, row, col, keycode);
     if (keymap_change_update_flag){
         load_virtual_keys();
-        update_lcd_view_data();
+        // update_lcd_view_data();
         load_omni_tb_config();
         load_omni_color_config();
         persist_load_all();
-        display_mode =  DISPLAY_MODE_TOUCH_KEY;
+        display_mode =  DISPLAY_MODE_SWIPE_GESTURE;
+        display_redraw();
     }
 }
 

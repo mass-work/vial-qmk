@@ -53,5 +53,6 @@
             "fileMatch": ["keymap.json"],
             "url": "./data/schemas/keymap.jsonschema"
         }
-    ]
+    ],
+    "cmake.sourceDirectory": "D:/11_vial/vial-qmk/lib/pico-sdk/test/kitchen_sink"
 }

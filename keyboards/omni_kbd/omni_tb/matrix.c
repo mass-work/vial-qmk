@@ -9,7 +9,7 @@
 #include "matrix.h"
 #include "debounce.h"
 #include "atomic_util.h"
-#include "omni_cs.h"
+#include "omni_tb.h"
 #include <math.h>
 #include "config.h"
 #include "timer.h"

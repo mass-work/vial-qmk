@@ -35,15 +35,12 @@ enum custom_keycodes {
     KC_val_sub_color_DOWN,
     TB_R_MODE_TOGGLE,
     TB_L_MODE_TOGGLE,
-    KC_DP_TOUCH_KEY,
-    KC_DP_TB_TUNE,
-    KC_DP_SWIPE_GESTURE,
-    KC_DP_KEY_MAT,
-    KC_DP_STAT1,
+    KC_DP_MODE_CYCLE,
 };
 
 extern point_t circles[6];
 extern uint16_t virtual_keycode[72];
+extern bool is_haptic;
 
 typedef enum {
     ORIENT_0,
@@ -51,3 +48,4 @@ typedef enum {
     ORIENT_180,
     ORIENT_270
 } orientation_t;
+

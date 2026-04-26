@@ -44,11 +44,35 @@ void process_cursor_report(report_mouse_t *mouse_report, pmw33xx_report_t report
     }
 }
 
-void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale) {
+void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic) {
+    (void)is_haptic;
     if (!report.motion.b.is_lifted) {
         uint16_t corr_calc_rapport_max = 600;
-        float x = (report.delta_x * cpi_scale);
-        float y = (report.delta_y * cpi_scale);
+
+        float raw_x = report.delta_x * cpi_scale;
+        float raw_y = report.delta_y * cpi_scale;
+        float x, y;
+
+        switch (orientation) {
+            case 0:
+            default:
+                x = raw_x;
+                y = raw_y;
+                break;
+            case 1: // 90 deg
+                x =  raw_y;
+                y = -raw_x;
+                break;
+            case 2: // 180 deg
+                x = -raw_x;
+                y = -raw_y;
+                break;
+            case 3: // 270 deg
+                x = -raw_y;
+                y =  raw_x;
+                break;
+        }
+
         int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
         int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
         float x_corr = pow(fabs(x), speed_adjust) / pow(corr_calc_rapport_max, speed_adjust) * corr_calc_rapport_max / 100 * slope_factor * sign_x;
@@ -78,51 +102,139 @@ void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report
 
 
 
-void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale) {
+#include "haptic.h"
+#include "dynamic_keymap.h"
+
+typedef enum {
+    TB_TAP_LEFT = 0,
+    TB_TAP_RIGHT,
+    TB_TAP_UP,
+    TB_TAP_DOWN,
+    TB_TAP_SLOT_COUNT
+} tb_tap_slot_t;
+
+static const keypos_t tb_tap_keypos[TB_TAP_SLOT_COUNT] = {
+    [TB_TAP_LEFT]  = { .row = 3, .col = 2 },
+    [TB_TAP_RIGHT] = { .row = 3, .col = 3 },
+    [TB_TAP_UP]    = { .row = 2, .col = 2 },
+    [TB_TAP_DOWN]  = { .row = 2, .col = 3 },
+};
+
+static void tb_tap_virtual_key(tb_tap_slot_t slot) {
+    uprintf("tb_tap_virtual_key: slot=%d\n", slot);
+    if (slot >= TB_TAP_SLOT_COUNT) {
+        return;
+    }
+
+    keypos_t pos = tb_tap_keypos[slot];
+    uint8_t layer   = get_highest_layer(layer_state | default_layer_state);
+    uint16_t keycode = dynamic_keymap_get_keycode(layer, pos.row, pos.col);
+
+    if (keycode == KC_NO) {
+        return;
+    }
+
+    tap_code16(keycode);
+}
+
+
+void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic) {
+
     if (!report.motion.b.is_lifted) {
-        int x = (report.delta_x / cpi_scale);
-        int y = (report.delta_y / cpi_scale);
+
+        float raw_x = (float)report.delta_x / cpi_scale;
+        float raw_y = (float)report.delta_y / cpi_scale;
+
+        const float sens = 0.1f;
+        raw_x *= sens;
+        raw_y *= sens;
+
+        float x, y;
+
+        switch (orientation) {
+            case 0:
+            default:
+                x = raw_x;
+                y = raw_y;
+                break;
+            case 1: // 90 deg
+                x =  raw_y;
+                y = -raw_x;
+                break;
+            case 2: // 180 deg
+                x = -raw_x;
+                y = -raw_y;
+                break;
+            case 3: // 270 deg
+                x = -raw_y;
+                y =  raw_x;
+                break;
+        }
+        // --------------------------------------------
+
         int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
         int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
-        float x_corr = pow(fabs(x), speed_adjust) / pow(127, speed_adjust) * 127 / 100 * slope_factor * sign_x;
-        float y_corr = pow(fabs(y), speed_adjust) / pow(127, speed_adjust) * 127 / 100 * slope_factor * sign_y;
-        const float diagonal_limit = 0.6f;
-        float ratio = fabs(y_corr) / fabs(x_corr);
+
+        float x_corr = powf(fabsf(x), speed_adjust) / powf(127.0f, speed_adjust) * 127.0f / 100.0f * slope_factor * sign_x;
+        float y_corr = powf(fabsf(y), speed_adjust) / powf(127.0f, speed_adjust) * 127.0f / 100.0f * slope_factor * sign_y;
+
+        const float diagonal_limit = 0.2f;
+        float       ratio          = fabsf(y_corr) / fabsf(x_corr);
+
         if (ratio > diagonal_limit && ratio < (1.0f / diagonal_limit)) {
             return;
         } else if (ratio <= diagonal_limit) {
-            accumulated_h += x_corr / 2;
+            accumulated_h += x_corr / 2.0f;
         } else {
-            accumulated_v += y_corr / 1;
+            accumulated_v += y_corr / 1.0f;
         }
-        int tap_cycle_max = 20;
-        if (fabs(accumulated_h) >= 1.0f) {
-            int tap_cycle_h = round(fabs(accumulated_h));
-            tap_cycle_h = (tap_cycle_h > tap_cycle_max) ? tap_cycle_max : tap_cycle_h;
+
+        int  tap_cycle_max = 20;
+        #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+            bool did_scroll    = false;
+        #endif
+
+        if (fabsf(accumulated_h) >= 1.0f) {
+            int tap_cycle_h = (int)roundf(fabsf(accumulated_h));
+            tap_cycle_h     = (tap_cycle_h > tap_cycle_max) ? tap_cycle_max : tap_cycle_h;
+
             for (int i = 0; i < tap_cycle_h; i += 2) {
                 if (accumulated_h > 0) {
-                    tap_code(KC_MS_WH_RIGHT);
-                    // tap_code(KC_RIGHT);
-                } else if (accumulated_h < 0){
-                    tap_code(KC_MS_WH_LEFT);
-                    // tap_code(KC_LEFT);
+                    tb_tap_virtual_key(TB_TAP_LEFT);
+                } else if (accumulated_h < 0) {
+                    tb_tap_virtual_key(TB_TAP_RIGHT);
                 }
+                #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+                    did_scroll = true;
+                #endif
             }
             accumulated_h = 0.0f;
         }
-        if (fabs(accumulated_v) >= 1.0f) {
-            int tap_cycle_v = round(fabs(accumulated_v));
-            tap_cycle_v = (tap_cycle_v > tap_cycle_max) ? tap_cycle_max : tap_cycle_v;
+
+        if (fabsf(accumulated_v) >= 1.0f) {
+            int tap_cycle_v = (int)roundf(fabsf(accumulated_v));
+            tap_cycle_v     = (tap_cycle_v > tap_cycle_max) ? tap_cycle_max : tap_cycle_v;
+
             for (int i = 0; i < tap_cycle_v; i += 2) {
                 if (accumulated_v > 0) {
-                    tap_code(KC_MS_WH_UP);
-                    // tap_code(KC_UP);
-                } else if (accumulated_v < 0){
-                    tap_code(KC_MS_WH_DOWN);
-                    // tap_code(KC_DOWN);
+                    tb_tap_virtual_key(TB_TAP_UP);
+                } else if (accumulated_v < 0) {
+                    tb_tap_virtual_key(TB_TAP_DOWN);
                 }
+                #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+                    did_scroll = true;
+                #endif
             }
-            accumulated_v = 0;
+            accumulated_v = 0.0f;
         }
+
+#ifdef HAPTIC_ENABLE
+    #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+    if (did_scroll && is_haptic) {
+        haptic_play();
+    }
+    #endif
+
+#endif
     }
 }

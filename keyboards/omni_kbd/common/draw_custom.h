@@ -10,3 +10,19 @@ bool qp_curve(painter_device_t device, float speed_adjust,int slope_factor, uint
 bool qp_fill_arc(painter_device_t device, uint16_t centerx, uint16_t centery, uint16_t outer_radius, uint16_t inner_radius, uint16_t start_angle, uint16_t end_angle, uint8_t hue, uint8_t sat, uint8_t val);
 void qp_donut(painter_device_t device, uint16_t x, uint16_t y, uint16_t radius, uint16_t thickness, uint8_t hue, uint8_t sat, uint8_t val1, uint8_t val2);
 bool qp_round_rect(painter_device_t dev, uint16_t left, uint16_t top, uint16_t right, uint16_t bottom, uint16_t radius, uint8_t  hue, uint8_t sat, uint8_t val, bool filled, uint8_t stroke_w);
+
+bool qp_rotated_ellipse_filled(painter_device_t device, uint16_t centerx, uint16_t centery, uint16_t width, uint16_t height, float angle_deg, uint8_t hue, uint8_t sat, uint8_t val);
+
+bool qp_draw_mni_rotated_solid(painter_device_t device,
+                               int16_t centerx, int16_t centery,
+                               float angle_deg,
+                               float scale,
+                               uint8_t hue, uint8_t sat, uint8_t val);
+
+bool qp_triangle_rotated(painter_device_t device,
+                         int16_t centerx, int16_t centery,
+                         uint16_t width, uint16_t height,
+                         float angle_deg,
+                         uint8_t hue, uint8_t sat, uint8_t val,
+                         bool filled,
+                         uint8_t stroke_w);
