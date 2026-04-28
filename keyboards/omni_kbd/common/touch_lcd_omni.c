@@ -209,10 +209,10 @@ void swipe_gesture_swipe_omni_logo(void) {
     qp_rotated_ellipse_filled(display, 120, 120, case_width, case_depth, case_angle, hue_main_color, sat_main_color, val_main_color);
     qp_circle(display, ball_position_mx, ball_position_my, ball_size, hue_bg, sat_bg, val_bg, true);
     qp_circle(display, ball_position_mx, ball_position_my, ball_spase, hue_sub_color, sat_sub_color, val_sub_color, true);
-    qp_triangle_rotated(display, 120, 220, 16, 14, 0.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
-    qp_triangle_rotated(display, 20 , 120, 16, 14, 90.0f, hue_main_color, sat_main_color, val_main_color, true, 1);   
-    qp_triangle_rotated(display, 120, 20 , 16, 14, 180.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
-    qp_triangle_rotated(display, 220, 120, 16, 14, 270.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
+    qp_triangle_rotated(display, 120, 218, 20, 17, 0.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
+    qp_triangle_rotated(display, 22 , 120, 20, 17, 90.0f, hue_main_color, sat_main_color, val_main_color, true, 1);   
+    qp_triangle_rotated(display, 120, 22 , 20, 17, 180.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
+    qp_triangle_rotated(display, 218, 120, 20, 17, 270.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
     qp_circle(display, ball_position_sx, ball_position_sy, 8, hue_bg, sat_bg, val_bg, true);
     qp_circle(display, ball_position_sx, ball_position_sy, 6, hue_sub_color, sat_sub_color, val_sub_color, true);
     qp_draw_mni_rotated_solid(display, 160, 118, 270.0f, 1.4f, hue_bg, sat_bg, val_bg);
