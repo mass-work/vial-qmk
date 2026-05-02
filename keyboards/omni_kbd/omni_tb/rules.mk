@@ -147,4 +147,7 @@ SRC += ../common/touch_lcd_omni.c
 SRC += ../common/power_lcd.c
 SRC += ../common/status_view.c
 
+SRC += ../common/omni_bg_image.c
+SRC += ../common/omni_bg_hid.c
+
 LDFLAGS += -Wl,--wrap=dynamic_keymap_set_keycode

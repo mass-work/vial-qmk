@@ -28,6 +28,8 @@
 #include "../font/roboto_mono16.qff.h"
 #include "../font/st2_mono16.qff.h"
 #include "../icon/omni_image_loader.h"
+#include "../common/omni_bg_image.h"
+
 
 bool matrix_changed = false;
 static bool tb_state = false;
@@ -131,6 +133,7 @@ void keyboard_post_init_kb(void) {
     persist_load_all();
     display = qp_gc9a01_make_spi_device(TOUCH_LCD_WIDTH, TOUCH_LCD_HEIGHT, CS_PIN, DC_PIN, RST_PIN, 4, 0); // パネル幅, パネル高さ,,,,SPIディバイザ,SPIモード
     qp_init(display, QP_ROTATION_0);
+    omni_bg_set_display(display);
     power_lcd_init(display, BLK_PIN);
     noto9_font = qp_load_font_mem(font_noto9); 
     noto11_font = qp_load_font_mem(font_noto11); 
@@ -219,8 +222,12 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     }
     if (!is_first_frame) {
         if (is_second_frame) {
-            // draw_lcd_layer_category_images();
-            display_redraw();
+            if (omni_bg_is_valid()) {
+                omni_bg_draw_now();
+            } else {
+                display_redraw();
+            }
+            
             qp_flush(display);
             is_second_frame = false;
         }
@@ -240,7 +247,12 @@ void sleeping_kb(bool matrix_changed) {
             if (!lcd_is_on){
                 lcd_is_on = power_on_lcd();
             }
-            display_redraw();
+            if (omni_bg_is_valid()) {
+                omni_bg_draw_now();
+            } else {
+                display_redraw();
+            }
+            // display_redraw();
             sleeping_state = false;
         }
     }
@@ -287,6 +299,7 @@ void housekeeping_task_user(void) {
             gesture_id = GESTURE_NONE;
         }   
     }
+    omni_bg_task();
 }
 
 static const uint8_t display_mode_order[] = {
@@ -442,7 +455,14 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
     if(display_mode == DISPLAY_MODE_SWIPE_GESTURE) {
         save_omni_color_config();
-        display_redraw();
+
+        if (omni_bg_is_valid()) {
+            omni_bg_draw_now();
+        } else {
+            display_redraw();
+        }
+
+        // display_redraw();
     }
     return false;
 }
@@ -464,7 +484,13 @@ void __wrap_dynamic_keymap_set_keycode(uint8_t layer, uint8_t row, uint8_t col, 
         load_omni_color_config();
         persist_load_all();
         display_mode =  DISPLAY_MODE_SWIPE_GESTURE;
-        display_redraw();
+
+        if (omni_bg_is_valid()) {
+            omni_bg_draw_now();
+        } else {
+            display_redraw();
+        }        
+        // display_redraw();
     }
 }
 
