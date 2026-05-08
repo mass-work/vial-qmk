@@ -7,11 +7,14 @@
 #include "draw_custom.h"
 #include "view_keymap.h"
 #include "status_view.h"
+#include "dynamic_keymap.h"
 #include "../drivers/cst816t.h"
 #include "../icon/omni_image_loader.h"
+#include "../common/omni_icon_image.h"
 
 painter_device_t display;
-ImagePosition lcd_layer_app_images[MAX_LCD_CATEGORY + 1][MAX_LCD_LAYER + 1][7];
+// ImagePosition lcd_layer_app_images[MAX_LCD_CATEGORY + 1][MAX_LCD_LAYER + 1][7];
+ImagePosition lcd_layer_app_images[MAX_LCD_LAYER + 1][7];
 uint8_t current_layer = 0;
 uint8_t current_lcd_layer = 0;
 uint8_t current_lcd_category = 0;
@@ -36,7 +39,8 @@ display_mode_t display_mode = DISPLAY_MODE_DEFAULT; // DISPLAY_MODE_TOUCH_KEY
 painter_image_handle_t qp_load_image_mem(const void *buffer);
 painter_image_handle_t image_logo;
 painter_image_handle_t image_save;
-painter_image_handle_t layer_00, layer_01, layer_02, layer_03, layer_04, layer_05, layer_06, layer_07, layer_08, layer_09, layer_10, layer_11;
+// painter_image_handle_t layer_00, layer_01, layer_02, layer_03, layer_04, layer_05, layer_06, layer_07, layer_08, layer_09, layer_10, layer_11;
+painter_image_handle_t layer_00, layer_01, layer_02, layer_03;
 painter_image_handle_t image_000, image_001, image_002, image_003, image_004, image_005, image_006, image_007, image_008, image_009, image_010, image_011, image_012, image_013, image_014, image_015, image_016, image_017, image_018, image_019, image_020, image_021, image_022, image_023, image_024, image_025, image_026, image_027, image_028, image_029, image_030, image_031, image_032, image_033, image_034, image_035, image_036, image_037, image_038, image_039, image_040, image_041, image_042, image_043, image_044, image_045, image_046, image_047, image_048, image_049, image_050, image_051, image_052, image_053, image_054, image_055, image_056, image_057, image_058, image_059, image_060, image_061, image_062, image_063, image_064, image_065, image_066, image_067, image_068, image_069, image_070, image_071, image_072, image_073, image_074, image_075, image_076, image_077, image_078, image_079, image_080, image_081, image_082, image_083, image_084, image_085, image_086, image_087, image_088, image_089, image_090, image_091, image_092, image_093, image_094, image_095, image_096, image_097, image_098, image_099, image_100, image_101, image_102, image_103, image_104, image_105, image_106, image_107, image_108, image_109, image_110, image_111, image_112, image_113, image_114, image_115, image_116, image_117, image_118, image_119, image_120, image_121, image_122, image_123, image_124, image_125, image_126, image_127, image_128, image_129, image_130, image_131, image_132, image_133, image_134, image_135, image_136, image_137, image_138, image_139, image_140, image_141, image_142, image_143, image_144, image_145, image_146, image_147, image_148, image_149, image_150, image_151, image_152, image_153, image_154, image_155, image_156, image_157, image_158, image_159, image_160, image_161, image_162, image_163, image_164, image_165, image_166, image_167, image_168, image_169, image_170, image_171, image_172, image_173, image_174, image_175, image_176, image_177, image_178, image_179, image_180, image_181, image_182, image_183, image_184, image_185, image_186, image_187, image_188, image_189, image_190, image_191, image_192, image_193, image_194, image_195, image_196, image_197, image_198, image_199, image_200, image_201, image_202, image_203, image_204, image_205, image_206, image_207, image_208, image_209, image_210, image_211, image_212, image_213, image_214, image_215, image_216, image_217, image_218, image_219, image_220, image_221, image_222, image_223, image_224, image_225, image_226, image_227, image_228, image_229, image_230, image_231, image_232, image_233, image_234, image_235, image_236, image_237, image_238, image_239, image_240, image_241, image_242, image_243, image_244, image_245, image_246, image_247, image_248, image_249, image_250, image_251, image_252, image_253, image_254;
 uint8_t touch_data[6];
 ImagePosition images[7];
@@ -72,9 +76,16 @@ static const char *text6 = "-      -";
 
 void process_touch_trackball_tuning_mode(uint16_t touch_x, uint16_t touch_y);
 
+// painter_image_handle_t* get_layer_img_func(uint16_t layer_count) {
+//     static painter_image_handle_t* layer_image_ptrs[12] = {
+//         &layer_00, &layer_01, &layer_02, &layer_03, &layer_04, &layer_05, &layer_06, &layer_07, &layer_08, &layer_09, &layer_10, &layer_11
+//     };
+//     return layer_image_ptrs[layer_count];
+// }
+
 painter_image_handle_t* get_layer_img_func(uint16_t layer_count) {
-    static painter_image_handle_t* layer_image_ptrs[12] = {
-        &layer_00, &layer_01, &layer_02, &layer_03, &layer_04, &layer_05, &layer_06, &layer_07, &layer_08, &layer_09, &layer_10, &layer_11
+    static painter_image_handle_t* layer_image_ptrs[4] = {
+        &layer_00, &layer_01, &layer_02, &layer_03
     };
     return layer_image_ptrs[layer_count];
 }
@@ -88,6 +99,43 @@ painter_image_handle_t* get_img_func(uint16_t keycode) {
     }
     return &image_001;
 }
+
+// add
+#define CUSTOM_ICON_KEYCODE 0x77FE  // M254
+
+// painter_image_handle_t* get_custom_img_func_for_slot(uint8_t slot) {
+//     static painter_image_handle_t custom_image = NULL;
+
+//     custom_image = omni_icon_get_image(slot);
+
+//     if (custom_image != NULL) {
+//         return &custom_image;
+//     }
+
+//     // カスタム画像が無い場合のフォールバック
+//     return &image_254;
+// }
+
+painter_image_handle_t* get_custom_img_func_for_slot(uint8_t slot) {
+    painter_image_handle_t *custom_image = omni_icon_get_image_ptr(slot);
+
+    if (custom_image != NULL && *custom_image != NULL) {
+        return custom_image;
+    }
+
+    // カスタム画像が無い場合のフォールバック
+    return &image_254;
+}
+
+painter_image_handle_t* get_img_func_for_slot(uint16_t keycode, uint8_t slot) {
+    if (keycode == CUSTOM_ICON_KEYCODE) {
+        return get_custom_img_func_for_slot(slot);
+    }
+
+    return get_img_func(keycode);
+}
+// add end
+
 
 void draw_background(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
     qp_rect(display, x1, y1, x2, y2, hue_bg, sat_bg, val_bg, true);  // HSV: H=0, S=0, V=0 (黒色)
@@ -105,9 +153,22 @@ void draw_background_all_black(void) {
     qp_rect(display, 0, 0, TOUCH_LCD_WIDTH, TOUCH_LCD_HEIGHT, 0, 0, 0, true);  // HSV: H=0, S=0, V=0 (黒色)
 }
 
+// void draw_lcd_layer_category_images(void) {
+//     ImagePosition *images = lcd_layer_app_images[current_lcd_category][current_lcd_layer];
+//     int image_count = sizeof(lcd_layer_app_images[current_lcd_category][current_lcd_layer]) / sizeof(lcd_layer_app_images[current_lcd_category][current_lcd_layer][0]);
+//     for (int i = 0; i < image_count; i++) {
+//         if (*images[i].image != NULL) {
+//             int draw_x = images[i].x - (*images[i].image)->width / 2;
+//             int draw_y = images[i].y - (*images[i].image)->height / 2;
+//             qp_drawimage(display, draw_x, draw_y, *images[i].image);
+//         }
+//     }
+//     qp_flush(display);
+// }
+
 void draw_lcd_layer_category_images(void) {
-    ImagePosition *images = lcd_layer_app_images[current_lcd_category][current_lcd_layer];
-    int image_count = sizeof(lcd_layer_app_images[current_lcd_category][current_lcd_layer]) / sizeof(lcd_layer_app_images[current_lcd_category][current_lcd_layer][0]);
+    ImagePosition *images = lcd_layer_app_images[current_lcd_layer];
+    int image_count = sizeof(lcd_layer_app_images[current_lcd_layer]) / sizeof(lcd_layer_app_images[current_lcd_layer][0]);
     for (int i = 0; i < image_count; i++) {
         if (*images[i].image != NULL) {
             int draw_x = images[i].x - (*images[i].image)->width / 2;
@@ -180,7 +241,6 @@ const char* get_layer_name(uint8_t layer) {
         case 3:
             return "SYMB";
         case 4:
-
             return "CUST";
         default:
             return "UNKN";
@@ -295,117 +355,113 @@ void swipe_gesture_layer_view_update(void){
 }
 
 void swipe_gesture_process(void) {
-        switch (swipe_layer) {
-            case 0:
-                switch (gesture_id) {
-                    case CST816S_SLIDE_RIGHT:
-                        register_code(KC_LCTL);
-                        tap_code(KC_Y);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_LEFT:
-                        register_code(KC_LCTL);
-                        tap_code(KC_Z);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_UP:
-                        register_code(KC_LCTL);
-                        tap_code(KC_S);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_DOWN:
-                        change_swipe_layer();
-                        swipe_gesture_layer_view_update();
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case 1:
-                switch (gesture_id) {
-                    case CST816S_SLIDE_RIGHT:
-                        register_code(KC_LCTL);
-                        tap_code(KC_PGDN);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_LEFT:
-                        register_code(KC_LCTL);
-                        tap_code(KC_PGUP);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_UP:
-                        register_code(KC_LCTL);
-                        tap_code(KC_N);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_DOWN:
-                        change_swipe_layer();
-                        swipe_gesture_layer_view_update();
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case 2:
-                switch (gesture_id) {
-                    case CST816S_SLIDE_RIGHT:
-                        register_code(KC_LCTL);
-                        register_code(KC_LGUI);
-                        tap_code(KC_RIGHT);
-                        unregister_code(KC_LGUI);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_LEFT:
-                        register_code(KC_LCTL);
-                        register_code(KC_LGUI);
-                        tap_code(KC_LEFT);
-                        unregister_code(KC_LGUI);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_UP:
-                        register_code(KC_LCTL);
-                        register_code(KC_LGUI);
-                        tap_code(KC_D);
-                        unregister_code(KC_LGUI);
-                        unregister_code(KC_LCTL);
-                        break;
-                    case CST816S_SLIDE_DOWN:
-                        change_swipe_layer();
-                        swipe_gesture_layer_view_update();
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case 3:
-                switch (gesture_id) {
-                    case CST816S_SLIDE_RIGHT:
-                        tap_code(KC_F13);
-                        break;
-                    case CST816S_SLIDE_LEFT:
-                        tap_code(KC_F14);
-                        break;
-                    case CST816S_SLIDE_UP:
-                        tap_code(KC_F15);
-                        break;
-                    case CST816S_SLIDE_DOWN:
-                        change_swipe_layer();
-                        swipe_gesture_layer_view_update();
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
-    // }
-
+    switch (swipe_layer) {
+        case 0:
+            switch (gesture_id) {
+                case CST816S_SLIDE_RIGHT:
+                    register_code(KC_LCTL);
+                    tap_code(KC_Y);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_LEFT:
+                    register_code(KC_LCTL);
+                    tap_code(KC_Z);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_UP:
+                    register_code(KC_LCTL);
+                    tap_code(KC_S);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_DOWN:
+                    change_swipe_layer();
+                    swipe_gesture_layer_view_update();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 1:
+            switch (gesture_id) {
+                case CST816S_SLIDE_RIGHT:
+                    register_code(KC_LCTL);
+                    tap_code(KC_PGDN);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_LEFT:
+                    register_code(KC_LCTL);
+                    tap_code(KC_PGUP);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_UP:
+                    register_code(KC_LCTL);
+                    tap_code(KC_N);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_DOWN:
+                    change_swipe_layer();
+                    swipe_gesture_layer_view_update();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 2:
+            switch (gesture_id) {
+                case CST816S_SLIDE_RIGHT:
+                    register_code(KC_LCTL);
+                    register_code(KC_LGUI);
+                    tap_code(KC_RIGHT);
+                    unregister_code(KC_LGUI);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_LEFT:
+                    register_code(KC_LCTL);
+                    register_code(KC_LGUI);
+                    tap_code(KC_LEFT);
+                    unregister_code(KC_LGUI);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_UP:
+                    register_code(KC_LCTL);
+                    register_code(KC_LGUI);
+                    tap_code(KC_D);
+                    unregister_code(KC_LGUI);
+                    unregister_code(KC_LCTL);
+                    break;
+                case CST816S_SLIDE_DOWN:
+                    change_swipe_layer();
+                    swipe_gesture_layer_view_update();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 3:
+            switch (gesture_id) {
+                case CST816S_SLIDE_RIGHT:
+                    tap_code(KC_F13);
+                    break;
+                case CST816S_SLIDE_LEFT:
+                    tap_code(KC_F14);
+                    break;
+                case CST816S_SLIDE_UP:
+                    tap_code(KC_F15);
+                    break;
+                case CST816S_SLIDE_DOWN:
+                    change_swipe_layer();
+                    swipe_gesture_layer_view_update();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 
-// --------------------------add------------------------------------------------
-#include "dynamic_keymap.h"
 
 typedef enum {
     TD_TAP_LEFT = 0,
@@ -416,14 +472,14 @@ typedef enum {
 } td_tap_slot_t;
 
 static const keypos_t td_tap_keypos[TD_TAP_SLOT_COUNT] = {
-    [TD_TAP_LEFT]  = { .row = 3, .col = 4 },
-    [TD_TAP_RIGHT] = { .row = 3, .col = 5 },
-    [TD_TAP_UP]    = { .row = 2, .col = 4 },
-    [TD_TAP_DOWN]  = { .row = 2, .col = 5 },
+    [TD_TAP_LEFT]  = { .row = 4, .col = 4 },
+    [TD_TAP_RIGHT] = { .row = 4, .col = 5 },
+    [TD_TAP_UP]    = { .row = 5, .col = 4 },
+    [TD_TAP_DOWN]  = { .row = 5, .col = 5 },
 };
 
 static void td_tap_virtual_key(td_tap_slot_t slot) {
-    uprintf("td_tap_virtual_key: slot=%d\n", slot);
+    
     if (slot >= TD_TAP_SLOT_COUNT) {
         return;
     }
@@ -433,6 +489,12 @@ static void td_tap_virtual_key(td_tap_slot_t slot) {
     uint16_t keycode = dynamic_keymap_get_keycode(layer, pos.row, pos.col);
 
     if (keycode == KC_NO) {
+        return;
+    }
+
+    if (keycode >= MACRO_KEY_START && keycode <= MACRO_KEY_END) {
+        uint8_t macro_id = keycode - MACRO_KEY_START;
+        dynamic_keymap_macro_send(macro_id);
         return;
     }
 
@@ -458,10 +520,6 @@ void swipe_gesture_vkey_process(void) {
             break;
     }
 }
-
-
-// --------------------------add------------------------------------------------
-
 
 bool is_touch_in_circle(uint16_t touch_x, uint16_t touch_y, point_t circle, uint16_t radius) {
     uint32_t distance_squared = (circle.x - touch_x) * (circle.x - touch_x) + (circle.y - touch_y) * (circle.y - touch_y);
@@ -574,7 +632,6 @@ void touch_buf_tick(void) {
                 off_hold_t0 = 0;
             }
         }
-
     }
 }
  
@@ -595,7 +652,8 @@ void process_gesture(void){
             touch_y = now_touch_y;
             process_touch();
         } else if (touch_mode == TOUCH_MODE_SWIPE) {
-            update_lcd_layer_category_by_gesture();
+            // update_lcd_layer_category_by_gesture();
+            swipe_gesture_vkey_process();
         }
         break;
 
@@ -669,7 +727,6 @@ void process_touch_interrupt(void) {
         touch_buf_init();
     }
     touch_buf_tick();
-    
 
     if (T.in_contact) {
         // touch_time = timer_read();
@@ -708,7 +765,7 @@ void process_touch_interrupt(void) {
                 swipe_gesture_id_detected(x, y);
                 process_gesture();
                 touch_state = TOUCH_STATE_SINGLE;
-                // uprintf("-----SINGLE------\n");
+                uprintf("-----SINGLE------\n");
             }
 
         } else if (touch_state == TOUCH_STATE_SINGLE) { 
@@ -744,7 +801,6 @@ void process_touch_interrupt(void) {
                 now_touch_y = touch_data.y_point;
                 process_gesture();
                 // uprintf("-----REPEAT------\n");
-
             }
         }
             

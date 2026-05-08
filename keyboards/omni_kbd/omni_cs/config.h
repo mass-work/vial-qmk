@@ -3,19 +3,6 @@
 
 #pragma once
 
-// #define GP50 50U
-// #define GP51 51U
-// #define GP52 52U
-// #define GP53 53U
-// #define GP54 54U
-// #define GP55 55U
-// #define GP56 56U
-// #define GP57 57U
-// #define GP58 58U
-// #define GP59 59U
-// #define GP60 60U
-// #define GP61 61U
-
 #define MAX_LCD_LAYER 3
 #define MAX_LCD_CATEGORY 2
 #define KEYCODE_SIZE 72
@@ -24,8 +11,6 @@
 
 #define MATRIX_ROWS 32
 #define MATRIX_COLS 6
-// #define MATRIX_ROW_PINS { GP11, GP12, GP13, GP14, GP50, GP51, GP52, GP53, GP54, GP55, GP56, GP57, GP58, GP59, GP60, GP61}
-// #define MATRIX_COL_PINS { GP0, GP2, GP3, GP8, GP9, GP10}
 #define MATRIX_ROW_PINS { GP11, GP12, GP13, GP14, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN, NO_PIN}
 #define MATRIX_COL_PINS { GP0, GP2, GP3, GP8, GP9, GP10}
 
@@ -54,11 +39,35 @@
 
 #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
 
-#define POINTING_DEVICE_HIRES_SCROLL_ENABLE
-#define POINTING_DEVICE_HIRES_SCROLL_MULTIPLIER 120
-#define POINTING_DEVICE_HIRES_SCROLL_EXPONENT    0
-#define WHEEL_EXTENDED_REPORT
+// #define POINTING_DEVICE_HIRES_SCROLL_ENABLE
 
+#ifdef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+    #define process_tb_gesture_report process_high_res_scroll_report
+    #define POINTING_DEVICE_HIRES_SCROLL_MULTIPLIER 120
+    #define POINTING_DEVICE_HIRES_SCROLL_EXPONENT    0
+    #define WHEEL_EXTENDED_REPORT
+#else
+    #define process_tb_gesture_report process_tap_report
+#endif
+
+#define TOUCH_GESTURE_VKEY_ENABLE
 #define TAP_CODE_DELAY 10
 
 #define DISPLAY_MODE_DEFAULT DISPLAY_MODE_TOUCH_KEY
+
+#define DRV2605L_FB_ERM_LRA 1
+#define DRV2605L_FB_BRAKEFACTOR 6
+#define DRV2605L_FB_LOOPGAIN 0
+#define DRV2605L_RATED_VOLTAGE 1
+#define DRV2605L_V_PEAK 2
+#define DRV2605L_V_RMS 1
+#define DRV2605L_F_LRA 170
+#define HAPTIC_DEFAULT_MODE 26
+
+#define OMNI_BG_FLASH_OFFSET 0x1C0000u
+#define OMNI_BG_SLOT_SIZE    0x20000u  // 128KB
+#define OMNI_BG_WIDTH        240
+#define OMNI_BG_HEIGHT       240
+
+#define MACRO_KEY_START 0x7700
+#define MACRO_KEY_END   0x77FE

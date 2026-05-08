@@ -22,6 +22,9 @@ SRC += ../drivers/pmw3360.c
 SRC += ../drivers/pmw33xx_common.c
 QUANTUM_LIB_SRC += spi_master.c 
 
+HAPTIC_ENABLE = yes
+HAPTIC_DRIVER = drv2605l
+
 QUANTUM_PAINTER_ENABLE = yes
 QUANTUM_PAINTER_DRIVERS += gc9a01_spi
 SRC += ../common/draw_custom.c
@@ -135,7 +138,6 @@ SRC += ../icon/generated/086.qgf.c
 I2C_ENABLE = yes
 QUANTUM_LIB_SRC += i2c_master.c
 SRC += drivers/cst816t.c
-# SRC += ../common/get_custom_gesture.c
 
 SRC += ../common/sleeping_view.c
 SRC += ../common/view_keymap.c
@@ -145,5 +147,8 @@ SRC += ../common/touch_lcd_omni.c
 SRC += ../common/power_lcd.c
 SRC += ../common/status_view.c
 
-# SRC += ../common/keymap_changed_hook.c
+SRC += ../common/omni_bg_hid.c
+SRC += ../common/omni_bg_image.c
+SRC += ../common/omni_icon_image.c
+
 LDFLAGS += -Wl,--wrap=dynamic_keymap_set_keycode

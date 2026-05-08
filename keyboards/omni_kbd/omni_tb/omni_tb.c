@@ -30,7 +30,6 @@
 #include "../icon/omni_image_loader.h"
 #include "../common/omni_bg_image.h"
 
-
 bool matrix_changed = false;
 static bool tb_state = false;
 trackball_mode_t tb_mode_r = TRACKBALL_CURSOR;
@@ -122,8 +121,6 @@ void bootmagic_scan(void) {
     }
 }
 
-
-
 void keyboard_post_init_kb(void) {
     if (!eeconfig_is_enabled()) {
         eeconfig_init();
@@ -158,7 +155,6 @@ void keyboard_post_init_kb(void) {
     wait_ms(300); 
     sync_default_layer_to_os();
 }
-
 
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     current_layer = get_highest_layer(layer_state);
@@ -235,7 +231,6 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     return pointing_device_task_user(mouse_report);
 }
 
-
 void matrix_scan_user(void) {
     process_touch_interrupt();
 }
@@ -252,7 +247,6 @@ void sleeping_kb(bool matrix_changed) {
             } else {
                 display_redraw();
             }
-            // display_redraw();
             sleeping_state = false;
         }
     }
@@ -279,6 +273,53 @@ void sleeping_kb(bool matrix_changed) {
     } 
 }
 
+// add draw_test
+uint8_t draw_counter = 0;
+uint16_t draw_stress_timer = 0;
+uint16_t draw_test_time = 3000;
+
+void draw_test(void) {
+    if (timer_elapsed(draw_stress_timer) < draw_test_time) {
+        return;
+    }
+    draw_stress_timer = timer_read();
+    uprintf("DRAW TEST: mode=%u start\n", draw_counter);
+
+    switch (draw_counter) {
+        case 0:
+            draw_background_all_black();
+            init_matrix_code_rain();
+            update_matrix_code_rain();
+            draw_matrix_code_rain(display, noto11_font);
+            qp_flush(display);
+            break;
+
+        case 1:
+            // draw_background_all_black();
+            omni_bg_draw_now();
+            break;
+
+        case 2:            
+            // draw_background_all_black();
+            draw_lcd_layer_category_images();
+            display_redraw();
+            break;
+
+        case 3:
+            // draw_background_all_black();
+            omni_bg_draw_now();
+            break;
+    }
+
+    uprintf("DRAW TEST: mode=%u end\n", draw_counter);
+
+    draw_counter++;
+
+    if (draw_counter > 3) {
+        draw_counter = 0;
+    }
+}
+
 void housekeeping_task_user(void) {
     lcd_current_time = timer_read();
     if (lcd_current_time - lcd_fast_res_time > 3000) {
@@ -299,6 +340,7 @@ void housekeeping_task_user(void) {
             gesture_id = GESTURE_NONE;
         }   
     }
+    // draw_test();
     omni_bg_task();
 }
 
@@ -452,7 +494,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         default:
             return true;
     }
-
     if(display_mode == DISPLAY_MODE_SWIPE_GESTURE) {
         save_omni_color_config();
 
@@ -461,12 +502,9 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         } else {
             display_redraw();
         }
-
-        // display_redraw();
     }
     return false;
 }
-
 
 void suspend_power_down_user(void){
     lcd_is_on = power_off_lcd();

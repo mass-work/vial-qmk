@@ -4,6 +4,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <print.h>
+#include "haptic.h"
+#include "dynamic_keymap.h"
+
 #include "trackball_omni.h"
 #include "timer.h"
 #include "config_omni.h"
@@ -44,8 +47,9 @@ void process_cursor_report(report_mouse_t *mouse_report, pmw33xx_report_t report
     }
 }
 
-void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic) {
+void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic, const keypos_t keypos[]) {
     (void)is_haptic;
+    (void)keypos;
     if (!report.motion.b.is_lifted) {
         uint16_t corr_calc_rapport_max = 600;
 
@@ -102,8 +106,147 @@ void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report
 
 
 
-#include "haptic.h"
-#include "dynamic_keymap.h"
+
+// typedef enum {
+//     TB_TAP_LEFT = 0,
+//     TB_TAP_RIGHT,
+//     TB_TAP_UP,
+//     TB_TAP_DOWN,
+//     TB_TAP_SLOT_COUNT
+// } tb_tap_slot_t;
+
+// static const keypos_t tb_tap_keypos[TB_TAP_SLOT_COUNT] = {
+//     [TB_TAP_LEFT]  = { .row = 5, .col = 2 },
+//     [TB_TAP_RIGHT] = { .row = 5, .col = 3 },
+//     [TB_TAP_UP]    = { .row = 5, .col = 0 },
+//     [TB_TAP_DOWN]  = { .row = 5, .col = 1 },
+// };
+
+// static void tb_tap_virtual_key(tb_tap_slot_t slot) {
+
+//     if (slot >= TB_TAP_SLOT_COUNT) {
+//         return;
+//     }
+
+//     keypos_t pos = tb_tap_keypos[slot];
+//     uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+//     uint16_t keycode = dynamic_keymap_get_keycode(layer, pos.row, pos.col);
+
+//     if (keycode == KC_NO) {
+//         return;
+//     }
+
+//     if (keycode >= MACRO_KEY_START && keycode <= MACRO_KEY_END) {
+//         uint8_t macro_id = keycode - MACRO_KEY_START;
+//         dynamic_keymap_macro_send(macro_id);
+//         return;
+//     }
+
+//     tap_code16(keycode);
+// }
+
+// void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic) {
+
+//     if (!report.motion.b.is_lifted) {
+
+//         float raw_x = (float)report.delta_x / cpi_scale;
+//         float raw_y = (float)report.delta_y / cpi_scale;
+
+//         const float sens = 0.1f;
+//         raw_x *= sens;
+//         raw_y *= sens;
+
+//         float x, y;
+
+//         switch (orientation) {
+//             case 0:
+//             default:
+//                 x = raw_x;
+//                 y = raw_y;
+//                 break;
+//             case 1: // 90 deg
+//                 x =  raw_y;
+//                 y = -raw_x;
+//                 break;
+//             case 2: // 180 deg
+//                 x = -raw_x;
+//                 y = -raw_y;
+//                 break;
+//             case 3: // 270 deg
+//                 x = -raw_y;
+//                 y =  raw_x;
+//                 break;
+//         }
+//         // --------------------------------------------
+
+//         int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
+//         int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
+
+//         float x_corr = powf(fabsf(x), speed_adjust) / powf(127.0f, speed_adjust) * 127.0f / 100.0f * slope_factor * sign_x;
+//         float y_corr = powf(fabsf(y), speed_adjust) / powf(127.0f, speed_adjust) * 127.0f / 100.0f * slope_factor * sign_y;
+
+//         const float diagonal_limit = 0.2f;
+//         float       ratio          = fabsf(y_corr) / fabsf(x_corr);
+
+//         if (ratio > diagonal_limit && ratio < (1.0f / diagonal_limit)) {
+//             return;
+//         } else if (ratio <= diagonal_limit) {
+//             accumulated_h += x_corr / 2.0f;
+//         } else {
+//             accumulated_v += y_corr / 1.0f;
+//         }
+
+//         int  tap_cycle_max = 20;
+//         #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+//             bool did_scroll    = false;
+//         #endif
+
+//         if (fabsf(accumulated_h) >= 1.0f) {
+//             int tap_cycle_h = (int)roundf(fabsf(accumulated_h));
+//             tap_cycle_h     = (tap_cycle_h > tap_cycle_max) ? tap_cycle_max : tap_cycle_h;
+
+//             for (int i = 0; i < tap_cycle_h; i += 2) {
+//                 if (accumulated_h > 0) {
+//                     tb_tap_virtual_key(TB_TAP_LEFT);
+//                 } else if (accumulated_h < 0) {
+//                     tb_tap_virtual_key(TB_TAP_RIGHT);
+//                 }
+//                 #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+//                     did_scroll = true;
+//                 #endif
+//             }
+//             accumulated_h = 0.0f;
+//         }
+
+//         if (fabsf(accumulated_v) >= 1.0f) {
+//             int tap_cycle_v = (int)roundf(fabsf(accumulated_v));
+//             tap_cycle_v     = (tap_cycle_v > tap_cycle_max) ? tap_cycle_max : tap_cycle_v;
+
+//             for (int i = 0; i < tap_cycle_v; i += 2) {
+//                 if (accumulated_v > 0) {
+//                     tb_tap_virtual_key(TB_TAP_UP);
+//                 } else if (accumulated_v < 0) {
+//                     tb_tap_virtual_key(TB_TAP_DOWN);
+//                 }
+//                 #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+//                     did_scroll = true;
+//                 #endif
+//             }
+//             accumulated_v = 0.0f;
+//         }
+
+// #ifdef HAPTIC_ENABLE
+//     #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
+//     if (did_scroll && is_haptic) {
+//         haptic_play();
+//     }
+//     #endif
+
+// #endif
+//     }
+// }
+
+
 
 typedef enum {
     TB_TAP_LEFT = 0,
@@ -113,24 +256,132 @@ typedef enum {
     TB_TAP_SLOT_COUNT
 } tb_tap_slot_t;
 
-static const keypos_t tb_tap_keypos[TB_TAP_SLOT_COUNT] = {
-    [TB_TAP_LEFT]  = { .row = 3, .col = 2 },
-    [TB_TAP_RIGHT] = { .row = 3, .col = 3 },
-    [TB_TAP_UP]    = { .row = 2, .col = 2 },
-    [TB_TAP_DOWN]  = { .row = 2, .col = 3 },
+static const keypos_t tb_tap_keypos_main[TB_TAP_SLOT_COUNT] = {
+    [TB_TAP_LEFT]  = { .row = 4, .col = 2 },
+    [TB_TAP_RIGHT] = { .row = 4, .col = 3 },
+    [TB_TAP_UP]    = { .row = 4, .col = 0 },
+    [TB_TAP_DOWN]  = { .row = 4, .col = 1 },
 };
 
-static void tb_tap_virtual_key(tb_tap_slot_t slot) {
-    uprintf("tb_tap_virtual_key: slot=%d\n", slot);
+static const keypos_t tb_tap_keypos_sub[TB_TAP_SLOT_COUNT] = {
+    [TB_TAP_LEFT]  = { .row = 5, .col = 2 },
+    [TB_TAP_RIGHT] = { .row = 5, .col = 3 },
+    [TB_TAP_UP]    = { .row = 5, .col = 0 },
+    [TB_TAP_DOWN]  = { .row = 5, .col = 1 },
+};
+
+static bool tb_main_gesture_enabled = false;
+static bool tb_sub_gesture_enabled  = false;
+static uint8_t tb_gesture_cache_layer = 255;
+
+static uint16_t tb_tap_get_keycode_on_layer(
+    const keypos_t keypos[],
+    tb_tap_slot_t slot,
+    uint8_t layer
+) {
     if (slot >= TB_TAP_SLOT_COUNT) {
+        return KC_NO;
+    }
+
+    keypos_t pos = keypos[slot];
+    return dynamic_keymap_get_keycode(layer, pos.row, pos.col);
+}
+
+static bool tb_tap_has_any_key_on_layer(
+    const keypos_t keypos[],
+    uint8_t layer
+) {
+    for (uint8_t i = 0; i < TB_TAP_SLOT_COUNT; i++) {
+        if (tb_tap_get_keycode_on_layer(keypos, i, layer) != KC_NO) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void tb_gesture_config_update_for_layer(uint8_t layer) {
+    tb_main_gesture_enabled = tb_tap_has_any_key_on_layer(tb_tap_keypos_main, layer);
+    tb_sub_gesture_enabled  = tb_tap_has_any_key_on_layer(tb_tap_keypos_sub, layer);
+    tb_gesture_cache_layer  = layer;
+}
+
+void tb_gesture_config_force_update(void) {
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    tb_gesture_config_update_for_layer(layer);
+}
+
+void tb_gesture_config_update_if_needed(void) {
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+
+    if (layer == tb_gesture_cache_layer) {
         return;
     }
 
-    keypos_t pos = tb_tap_keypos[slot];
-    uint8_t layer   = get_highest_layer(layer_state | default_layer_state);
-    uint16_t keycode = dynamic_keymap_get_keycode(layer, pos.row, pos.col);
+    tb_gesture_config_update_for_layer(layer);
+}
+
+bool tb_main_gesture_is_enabled(void) {
+    return tb_main_gesture_enabled;
+}
+
+bool tb_sub_gesture_is_enabled(void) {
+    return tb_sub_gesture_enabled;
+}
+
+
+
+
+
+
+static uint16_t tb_tap_get_keycode(const keypos_t keypos[TB_TAP_SLOT_COUNT], tb_tap_slot_t slot) {
+    if (slot >= TB_TAP_SLOT_COUNT) {
+        return KC_NO;
+    }
+
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    keypos_t pos = keypos[slot];
+
+    return dynamic_keymap_get_keycode(layer, pos.row, pos.col);
+}
+
+// static bool tb_tap_has_any_key(const keypos_t keypos[TB_TAP_SLOT_COUNT]) {
+//     for (uint8_t i = 0; i < TB_TAP_SLOT_COUNT; i++) {
+//         if (tb_tap_get_keycode(keypos, i) != KC_NO) {
+//             return true;
+//         }
+//     }
+
+//     return false;
+// }
+
+bool tb_main_tap_has_any_key(void) {
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    return tb_tap_has_any_key_on_layer(tb_tap_keypos_main, layer);
+}
+
+bool tb_sub_tap_has_any_key(void) {
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    return tb_tap_has_any_key_on_layer(tb_tap_keypos_sub, layer);
+}
+
+const keypos_t *tb_main_tap_keypos(void) {
+    return tb_tap_keypos_main;
+}
+
+const keypos_t *tb_sub_tap_keypos(void) {
+    return tb_tap_keypos_sub;
+}
+static void tb_tap_virtual_key(const keypos_t keypos[TB_TAP_SLOT_COUNT], tb_tap_slot_t slot) {
+    uint16_t keycode = tb_tap_get_keycode(keypos, slot);
 
     if (keycode == KC_NO) {
+        return;
+    }
+
+    if (keycode >= MACRO_KEY_START && keycode <= MACRO_KEY_END) {
+        uint8_t macro_id = keycode - MACRO_KEY_START;
+        dynamic_keymap_macro_send(macro_id);
         return;
     }
 
@@ -138,8 +389,7 @@ static void tb_tap_virtual_key(tb_tap_slot_t slot) {
 }
 
 
-void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic) {
-
+void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic, const keypos_t keypos[]) {
     if (!report.motion.b.is_lifted) {
 
         float raw_x = (float)report.delta_x / cpi_scale;
@@ -200,9 +450,9 @@ void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, f
 
             for (int i = 0; i < tap_cycle_h; i += 2) {
                 if (accumulated_h > 0) {
-                    tb_tap_virtual_key(TB_TAP_LEFT);
+                    tb_tap_virtual_key(keypos, TB_TAP_LEFT);
                 } else if (accumulated_h < 0) {
-                    tb_tap_virtual_key(TB_TAP_RIGHT);
+                    tb_tap_virtual_key(keypos, TB_TAP_RIGHT);
                 }
                 #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
                     did_scroll = true;
@@ -217,9 +467,9 @@ void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, f
 
             for (int i = 0; i < tap_cycle_v; i += 2) {
                 if (accumulated_v > 0) {
-                    tb_tap_virtual_key(TB_TAP_UP);
+                    tb_tap_virtual_key(keypos, TB_TAP_UP);
                 } else if (accumulated_v < 0) {
-                    tb_tap_virtual_key(TB_TAP_DOWN);
+                    tb_tap_virtual_key(keypos, TB_TAP_DOWN);
                 }
                 #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
                     did_scroll = true;

@@ -40,6 +40,9 @@
 #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
 #ifdef POINTING_DEVICE_HIRES_SCROLL_ENABLE
     #define process_tb_gesture_report process_high_res_scroll_report
+    #define POINTING_DEVICE_HIRES_SCROLL_MULTIPLIER 120
+    #define POINTING_DEVICE_HIRES_SCROLL_EXPONENT    0
+    #define WHEEL_EXTENDED_REPORT
 #else
     #define process_tb_gesture_report process_tap_report
 #endif
@@ -47,12 +50,7 @@
 #define TOUCH_GESTURE_VKEY_ENABLE
 #define TAP_CODE_DELAY 10
 
-// #define DRV2605L_FB_ERM_LRA 0
-// #define DRV2605L_FB_BRAKEFACTOR 6
-// #define DRV2605L_FB_LOOPGAIN    0
-// #define DRV2605L_RATED_VOLTAGE 2
-// #define DRV2605L_ V_PEAK        3
-// #define HAPTIC_DEFAULT_MODE    6
+#define DISPLAY_MODE_DEFAULT DISPLAY_MODE_SWIPE_GESTURE
 
 #define DRV2605L_FB_ERM_LRA 1
 #define DRV2605L_FB_BRAKEFACTOR 6
@@ -63,10 +61,7 @@
 #define DRV2605L_F_LRA 170
 #define HAPTIC_DEFAULT_MODE 26
 
-#define DISPLAY_MODE_DEFAULT DISPLAY_MODE_SWIPE_GESTURE
-
 #define OMNI_BG_FLASH_OFFSET 0x1C0000u
 #define OMNI_BG_SLOT_SIZE    0x20000u  // 128KB
-
 #define OMNI_BG_WIDTH        240
 #define OMNI_BG_HEIGHT       240

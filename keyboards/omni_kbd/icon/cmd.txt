@@ -19,3 +19,4 @@ qmk painter-convert-graphics -f pal16 -i 084.png -o ./generated/
 qmk painter-convert-graphics -f pal16 -i 085.png -o ./generated/
 qmk painter-convert-graphics -f pal16 -i 086.png -o ./generated/
 qmk painter-convert-graphics -f pal16 -i 087.png -o ./generated/
+qmk painter-convert-graphics -f rgb565 -i 087.png -o ./generated/

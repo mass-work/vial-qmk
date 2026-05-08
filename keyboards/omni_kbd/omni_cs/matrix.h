@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /* diode directions */
 #define COL2ROW 0
 #define ROW2COL 1
+// #define TOUCH_MATRIX_HOLD_MS 40
 
 #if (MATRIX_COLS <= 8)
 typedef uint8_t matrix_row_t;

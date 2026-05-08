@@ -48,4 +48,3 @@ typedef enum {
     ORIENT_180,
     ORIENT_270
 } orientation_t;
-

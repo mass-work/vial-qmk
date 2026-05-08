@@ -4,8 +4,8 @@
 #include "config.h"
 #include "config_omni.h"
 
-#define MACRO_KEY_START 0x7700
-#define MACRO_KEY_END   0x77FE
+// #define MACRO_KEY_START 0x7700
+// #define MACRO_KEY_END   0x77FE
 #define MACRO_KEY_COUNT (MACRO_KEY_END - MACRO_KEY_START + 1)
 #define TOUCH_TIME_MS         70
 #define TOUCH_DEBOUNCE_TIME   (TOUCH_TIME_MS + 80)
@@ -33,7 +33,8 @@ typedef struct {
 
 extern painter_device_t display;
 extern display_mode_t display_mode;
-extern ImagePosition lcd_layer_app_images[MAX_LCD_CATEGORY + 1][MAX_LCD_LAYER + 1][7];
+// extern ImagePosition lcd_layer_app_images[MAX_LCD_CATEGORY + 1][MAX_LCD_LAYER + 1][7];
+extern ImagePosition lcd_layer_app_images[MAX_LCD_LAYER + 1][7];
 extern uint8_t current_layer;
 extern uint8_t current_lcd_layer;
 extern uint8_t current_lcd_category;
@@ -53,6 +54,7 @@ extern uint8_t gesture_id;
 const char *get_layer_name(uint8_t layer); 
 
 painter_image_handle_t* get_img_func(uint16_t keycode);
+painter_image_handle_t* get_img_func_for_slot(uint16_t keycode, uint8_t slot); //add
 painter_image_handle_t* get_layer_img_func(uint16_t layer_count);
 void display_redraw(void);
 void draw_background_all(void);

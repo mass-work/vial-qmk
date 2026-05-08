@@ -2,6 +2,8 @@
 
 #include <string.h>
 #include "quantum.h"
+#include "qp_internal.h"
+#include "qp_comms.h"
 
 #if defined(RP2040)
 #    include "hardware/flash.h"
@@ -26,10 +28,17 @@
 #endif
 
 #define OMNI_BG_HEADER_SIZE       256u
+
 #define OMNI_BG_FORMAT_RGB565     1u
+#define OMNI_BG_FORMAT_QGF        2u
+
 #define OMNI_BG_BYTES_PER_PIXEL   2u
 #define OMNI_BG_IMAGE_SIZE        ((uint32_t)OMNI_BG_WIDTH * OMNI_BG_HEIGHT * OMNI_BG_BYTES_PER_PIXEL)
+
 #define OMNI_BG_PIXEL_OFFSET      (OMNI_BG_FLASH_OFFSET + OMNI_BG_HEADER_SIZE)
+#define OMNI_BG_DATA_OFFSET       (OMNI_BG_FLASH_OFFSET + OMNI_BG_HEADER_SIZE)
+#define OMNI_BG_MAX_DATA_SIZE     (OMNI_BG_SLOT_SIZE - OMNI_BG_HEADER_SIZE)
+
 
 #define OMNI_BG_FLASH_SECTOR_SIZE 4096u
 #define OMNI_BG_FLASH_PAGE_SIZE   256u
@@ -155,15 +164,29 @@ static bool write_header_valid(void) {
     uint8_t page[OMNI_BG_FLASH_PAGE_SIZE];
     memset(page, 0xFF, sizeof(page));
 
+    // omni_bg_header_t header = {
+    //     .magic     = OMNI_BG_MAGIC,
+    //     .version   = OMNI_BG_VERSION,
+    //     .width     = OMNI_BG_WIDTH,
+    //     .height    = OMNI_BG_HEIGHT,
+    //     .format    = OMNI_BG_FORMAT_RGB565,
+    //     .data_size = OMNI_BG_IMAGE_SIZE,
+    //     .crc32     = expected_crc,
+    // };
+
+    // add
     omni_bg_header_t header = {
         .magic     = OMNI_BG_MAGIC,
         .version   = OMNI_BG_VERSION,
         .width     = OMNI_BG_WIDTH,
         .height    = OMNI_BG_HEIGHT,
-        .format    = OMNI_BG_FORMAT_RGB565,
-        .data_size = OMNI_BG_IMAGE_SIZE,
+        .format    = OMNI_BG_FORMAT_QGF,
+        .data_size = expected_size,
         .crc32     = expected_crc,
-    };
+    };  
+    // add fin
+
+
 
     memcpy(page, &header, sizeof(header));
 
@@ -175,31 +198,62 @@ void omni_bg_set_display(painter_device_t display) {
     bg_display = display;
 }
 
-bool omni_bg_is_valid(void) {
-    const omni_bg_header_t *header = (const omni_bg_header_t *)flash_ptr(OMNI_BG_FLASH_OFFSET);
+// bool omni_bg_is_valid(void) {
+//     const omni_bg_header_t *header = (const omni_bg_header_t *)flash_ptr(OMNI_BG_FLASH_OFFSET);
 
-    if (header->magic != OMNI_BG_MAGIC) {
-        return false;
-    }
+//     if (header->magic != OMNI_BG_MAGIC) {
+//         return false;
+//     }
 
-    if (header->version != OMNI_BG_VERSION) {
-        return false;
-    }
+//     if (header->version != OMNI_BG_VERSION) {
+//         return false;
+//     }
 
-    if (header->width != OMNI_BG_WIDTH || header->height != OMNI_BG_HEIGHT) {
-        return false;
-    }
+//     if (header->width != OMNI_BG_WIDTH || header->height != OMNI_BG_HEIGHT) {
+//         return false;
+//     }
 
-    if (header->format != OMNI_BG_FORMAT_RGB565) {
-        return false;
-    }
+//     if (header->format != OMNI_BG_FORMAT_RGB565) {
+//         return false;
+//     }
 
-    if (header->data_size != OMNI_BG_IMAGE_SIZE) {
-        return false;
-    }
+//     if (header->data_size != OMNI_BG_IMAGE_SIZE) {
+//         return false;
+//     }
 
-    return true;
-}
+//     return true;
+// }
+
+// bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint32_t total_size, uint32_t crc32) {
+//     if (bg_state == OMNI_BG_STATE_ERASING || bg_state == OMNI_BG_STATE_WRITING) {
+//         set_error(OMNI_BG_ERROR_BUSY);
+//         return false;
+//     }
+
+//     if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT || total_size != OMNI_BG_IMAGE_SIZE) {
+//         set_error(OMNI_BG_ERROR_BAD_SIZE);
+//         return false;
+//     }
+
+//     if (format != OMNI_BG_FORMAT_RGB565) {
+//         set_error(OMNI_BG_ERROR_BAD_FORMAT);
+//         return false;
+//     }
+
+//     pending_width = width;
+//     pending_height = height;
+//     pending_format = format;
+//     pending_total_size = total_size;
+//     pending_crc32 = crc32;
+
+//     begin_pending_timer = timer_read();
+//     begin_pending = true;
+
+//     bg_error = OMNI_BG_ERROR_NONE;
+//     bg_state = OMNI_BG_STATE_IDLE;
+
+//     return true;
+// }
 
 bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint32_t total_size, uint32_t crc32) {
     if (bg_state == OMNI_BG_STATE_ERASING || bg_state == OMNI_BG_STATE_WRITING) {
@@ -207,12 +261,17 @@ bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t form
         return false;
     }
 
-    if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT || total_size != OMNI_BG_IMAGE_SIZE) {
+    if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT) {
         set_error(OMNI_BG_ERROR_BAD_SIZE);
         return false;
     }
 
-    if (format != OMNI_BG_FORMAT_RGB565) {
+    if (total_size == 0 || total_size > OMNI_BG_MAX_DATA_SIZE) {
+        set_error(OMNI_BG_ERROR_BAD_SIZE);
+        return false;
+    }
+
+    if (format != OMNI_BG_FORMAT_QGF) {
         set_error(OMNI_BG_ERROR_BAD_FORMAT);
         return false;
     }
@@ -232,21 +291,41 @@ bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t form
     return true;
 }
 
+
 bool omni_bg_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint32_t total_size, uint32_t crc32) {
     if (bg_state == OMNI_BG_STATE_ERASING || bg_state == OMNI_BG_STATE_WRITING) {
         set_error(OMNI_BG_ERROR_BUSY);
         return false;
     }
 
-    if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT || total_size != OMNI_BG_IMAGE_SIZE) {
+    // if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT || total_size != OMNI_BG_IMAGE_SIZE) {
+    //     set_error(OMNI_BG_ERROR_BAD_SIZE);
+    //     return false;
+    // }
+
+    // if (format != OMNI_BG_FORMAT_RGB565) {
+    //     set_error(OMNI_BG_ERROR_BAD_FORMAT);
+    //     return false;
+    // }
+
+    // add
+    if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT) {
         set_error(OMNI_BG_ERROR_BAD_SIZE);
         return false;
     }
 
-    if (format != OMNI_BG_FORMAT_RGB565) {
+    if (total_size == 0 || total_size > OMNI_BG_MAX_DATA_SIZE) {
+        set_error(OMNI_BG_ERROR_BAD_SIZE);
+        return false;
+    }
+
+    if (format != OMNI_BG_FORMAT_QGF) {
         set_error(OMNI_BG_ERROR_BAD_FORMAT);
         return false;
     }
+    omni_bg_close_image();
+    // add fin
+
 
     expected_size = total_size;
     expected_crc = crc32;
@@ -356,33 +435,171 @@ void omni_bg_request_draw(void) {
     draw_requested = true;
 }
 
+// void omni_bg_draw_now(void) {
+//     if (bg_display == NULL) {
+//         return;
+//     }
+
+//     if (!omni_bg_is_valid()) {
+//         return;
+//     }
+
+//     const uint8_t *img = flash_ptr(OMNI_BG_PIXEL_OFFSET);
+
+//     const uint16_t lines_per_chunk = 16;
+
+//     for (uint16_t y = 0; y < OMNI_BG_HEIGHT; y += lines_per_chunk) {
+//         uint16_t lines = lines_per_chunk;
+
+//         if (y + lines > OMNI_BG_HEIGHT) {
+//             lines = OMNI_BG_HEIGHT - y;
+//         }
+
+//         const uint8_t *src = img + ((uint32_t)y * OMNI_BG_WIDTH * OMNI_BG_BYTES_PER_PIXEL);
+
+//         qp_viewport(bg_display, 0, y, OMNI_BG_WIDTH - 1, y + lines - 1);
+//         qp_pixdata(bg_display, src, (uint32_t)OMNI_BG_WIDTH * lines);
+//     }
+
+//     qp_flush(bg_display);
+// }
+
+// void omni_bg_draw_now(void) {
+//     if (bg_display == NULL) {
+//         return;
+//     }
+//     if (!omni_bg_is_valid()) {
+//         return;
+//     }
+//     painter_driver_t *driver = (painter_driver_t *)bg_display;
+//     if (!driver || !driver->validate_ok) {
+//         return;
+//     }
+//     const uint8_t *img = flash_ptr(OMNI_BG_PIXEL_OFFSET);
+//     // const uint16_t lines_per_chunk = 4;
+//     const uint16_t lines_per_chunk = 120;
+//     if (!qp_comms_start(bg_display)) {
+//         return;
+//     }
+//     bool ok = true;
+
+//     if (!driver->driver_vtable->viewport( bg_display, 0, 0, OMNI_BG_WIDTH - 1, OMNI_BG_HEIGHT - 1)) {
+//         ok = false;
+//     }
+//     if (ok) {
+//         for (uint16_t y = 0; y < OMNI_BG_HEIGHT; y += lines_per_chunk) {
+//             uint16_t lines = lines_per_chunk;
+//             if (y + lines > OMNI_BG_HEIGHT) {
+//                 lines = OMNI_BG_HEIGHT - y;
+//             }
+//             const uint8_t *src =
+//                 img + ((uint32_t)y * OMNI_BG_WIDTH * OMNI_BG_BYTES_PER_PIXEL);
+//             uint32_t pixel_count = (uint32_t)OMNI_BG_WIDTH * lines;
+//             if (!driver->driver_vtable->pixdata(bg_display, src, pixel_count)) {
+//                 ok = false;
+//                 break;
+//             }
+//         }
+//     }
+//     qp_comms_stop(bg_display);
+//     // qp_flush(bg_display);
+// }
+
+
+
+static painter_image_handle_t bg_qgf_image = NULL;
+static bool bg_qgf_load_failed = false;
+static bool bg_draw_busy = false;
+
+bool omni_bg_is_valid(void) {
+    const omni_bg_header_t *header =
+        (const omni_bg_header_t *)flash_ptr(OMNI_BG_FLASH_OFFSET);
+
+    if (header == NULL) {
+        return false;
+    }
+
+    if (header->magic != OMNI_BG_MAGIC) {
+        return false;
+    }
+
+    if (header->version != OMNI_BG_VERSION) {
+        return false;
+    }
+
+    if (header->format != OMNI_BG_FORMAT_QGF) {
+        return false;
+    }
+
+    if (header->data_size == 0) {
+        return false;
+    }
+
+    if (header->data_size > OMNI_BG_MAX_DATA_SIZE) {
+        return false;
+    }
+
+    return true;
+}
+
+void omni_bg_close_image(void) {
+    if (bg_qgf_image != NULL) {
+        qp_close_image(bg_qgf_image);
+        bg_qgf_image = NULL;
+    }
+
+    bg_qgf_load_failed = false;
+}
+
+static painter_image_handle_t omni_bg_load_image_if_needed(void) {
+    if (bg_qgf_image != NULL) {
+        return bg_qgf_image;
+    }
+
+    if (bg_qgf_load_failed) {
+        return NULL;
+    }
+
+    if (!omni_bg_is_valid()) {
+        bg_qgf_load_failed = true;
+        return NULL;
+    }
+
+    const void *qgf = flash_ptr(OMNI_BG_DATA_OFFSET);
+
+    if (qgf == NULL) {
+        bg_qgf_load_failed = true;
+        return NULL;
+    }
+
+    bg_qgf_image = qp_load_image_mem(qgf);
+
+    if (bg_qgf_image == NULL) {
+        bg_qgf_load_failed = true;
+        return NULL;
+    }
+
+    return bg_qgf_image;
+}
+
 void omni_bg_draw_now(void) {
+    if (bg_draw_busy) {
+        return;
+    }
+
     if (bg_display == NULL) {
         return;
     }
 
-    if (!omni_bg_is_valid()) {
-        return;
+    bg_draw_busy = true;
+
+    painter_image_handle_t image = omni_bg_load_image_if_needed();
+
+    if (image != NULL) {
+        qp_drawimage(bg_display, 0, 0, image);
     }
 
-    const uint8_t *img = flash_ptr(OMNI_BG_PIXEL_OFFSET);
-
-    const uint16_t lines_per_chunk = 16;
-
-    for (uint16_t y = 0; y < OMNI_BG_HEIGHT; y += lines_per_chunk) {
-        uint16_t lines = lines_per_chunk;
-
-        if (y + lines > OMNI_BG_HEIGHT) {
-            lines = OMNI_BG_HEIGHT - y;
-        }
-
-        const uint8_t *src = img + ((uint32_t)y * OMNI_BG_WIDTH * OMNI_BG_BYTES_PER_PIXEL);
-
-        qp_viewport(bg_display, 0, y, OMNI_BG_WIDTH - 1, y + lines - 1);
-        qp_pixdata(bg_display, src, (uint32_t)OMNI_BG_WIDTH * lines);
-    }
-
-    qp_flush(bg_display);
+    bg_draw_busy = false;
 }
 
 void omni_bg_task(void) {
@@ -420,6 +637,7 @@ void omni_bg_task(void) {
 
     if (draw_requested) {
         draw_requested = false;
+        omni_bg_close_image();
         omni_bg_draw_now();
     }
 }
@@ -443,3 +661,70 @@ uint8_t omni_bg_get_progress_percent(void) {
 
     return (uint8_t)((received_size * 100u) / expected_size);
 }
+
+
+
+// ----------------------------------------------------------
+
+
+
+
+
+// void omni_bg_task(void) {
+//     if (begin_pending) {
+//         if (timer_elapsed(begin_pending_timer) < OMNI_BG_BEGIN_START_DELAY_MS) {
+//             return;
+//         }
+
+//         begin_pending = false;
+//         omni_bg_begin_upload(
+//             pending_width,
+//             pending_height,
+//             pending_format,
+//             pending_total_size,
+//             pending_crc32
+//         );
+//         return;
+//     }
+
+//     if (bg_state == OMNI_BG_STATE_ERASING) {
+//         if (timer_elapsed(erase_start_timer) < OMNI_BG_ERASE_START_DELAY_MS) {
+//             return;
+//         }
+
+//         flash_erase_4k(OMNI_BG_FLASH_OFFSET + erase_offset);
+
+//         erase_offset += OMNI_BG_FLASH_SECTOR_SIZE;
+
+//         if (erase_offset >= OMNI_BG_SLOT_SIZE) {
+//             bg_state = OMNI_BG_STATE_READY;
+//         }
+
+//         return;
+//     }
+
+//     if (draw_requested) {
+//         draw_requested = false;
+//         omni_bg_draw_now();
+//     }
+// }
+
+// omni_bg_state_t omni_bg_get_state(void) {
+//     return bg_state;
+// }
+
+// uint8_t omni_bg_get_error(void) {
+//     return bg_error;
+// }
+
+// uint8_t omni_bg_get_progress_percent(void) {
+//     if (bg_state == OMNI_BG_STATE_ERASING) {
+//         return (uint8_t)((erase_offset * 100u) / OMNI_BG_SLOT_SIZE);
+//     }
+
+//     if (expected_size == 0) {
+//         return 0;
+//     }
+
+//     return (uint8_t)((received_size * 100u) / expected_size);
+// }

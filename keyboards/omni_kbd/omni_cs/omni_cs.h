@@ -44,6 +44,7 @@ enum custom_keycodes {
 
 extern point_t circles[6];
 extern uint16_t virtual_keycode[72];
+extern bool is_haptic;
 
 typedef enum {
     ORIENT_0,
