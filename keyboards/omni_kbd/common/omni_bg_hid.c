@@ -141,6 +141,8 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
             uprintf("[ICON HID] RELOAD slot=%u\n", slot);
 
             omni_icon_close_image(slot);
+            omni_icon_on_changed(slot);
+            
             write_icon_status_response(data, true);
             data[5] = slot;
 

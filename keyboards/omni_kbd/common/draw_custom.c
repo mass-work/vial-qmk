@@ -11,6 +11,13 @@
 #include "qgf.h"
 #include "qp.h"
 
+#define DEG_TO_RAD(angle) ((angle) * M_PI / 180.0)
+#define ANGLE_STEP 1
+#ifndef M_PI
+#    define M_PI 3.14159265358979323846
+#endif
+
+
 static inline int16_t constrain_hid(int16_t value) {
     if (value > MAX_HID_VALUE) return MAX_HID_VALUE;
     if (value < MIN_HID_VALUE) return MIN_HID_VALUE;
@@ -61,10 +68,6 @@ bool qp_curve(painter_device_t device, float speed_adjust, int slope_factor, uin
     return ret;
 }
 
-
-#define DEG_TO_RAD(angle) ((angle) * M_PI / 180.0)
-#define ANGLE_STEP 1 
-
 bool qp_fill_arc(painter_device_t device, uint16_t centerx, uint16_t centery, uint16_t outer_radius, uint16_t inner_radius, uint16_t start_angle, uint16_t end_angle, uint8_t hue, uint8_t sat, uint8_t val) {
     if (outer_radius <= inner_radius) {
         return false; 
@@ -108,8 +111,6 @@ void qp_donut(painter_device_t device, uint16_t x, uint16_t y, uint16_t radius, 
     }
 }
 
-
-
 static uint16_t isqrt_u32(uint32_t n) {
     uint32_t res = 0, bit = 1UL << 30;
     while (bit > n) bit >>= 2;
@@ -121,11 +122,7 @@ static uint16_t isqrt_u32(uint32_t n) {
     return (uint16_t)res;
 }
 
-static bool rr_filled(painter_device_t d,
-                      uint16_t l, uint16_t t,
-                      uint16_t r, uint16_t b,
-                      uint16_t rad)
-{
+static bool rr_filled(painter_device_t d, uint16_t l, uint16_t t, uint16_t r, uint16_t b, uint16_t rad) {
     uint16_t h = b - t + 1;
 
     for (uint16_t row = 0; row < h; row++) {
@@ -150,11 +147,7 @@ static bool rr_filled(painter_device_t d,
     return true;
 }
 
-static bool rr_outline(painter_device_t d,
-                       uint16_t l, uint16_t t,
-                       uint16_t r, uint16_t b,
-                       uint16_t rad)
-{
+static bool rr_outline(painter_device_t d, uint16_t l, uint16_t t, uint16_t r, uint16_t b, uint16_t rad) {
     uint16_t h = b - t + 1;
 
     for (uint16_t row = 0; row < h; row++) {
@@ -220,15 +213,7 @@ static bool rr_outline_w(painter_device_t d, uint16_t l, uint16_t t, uint16_t r,
     return true;
 }
 
-/* ────────── PUBLIC API ────────── */
-bool qp_round_rect(painter_device_t dev,
-                   uint16_t left,  uint16_t top,
-                   uint16_t right, uint16_t bottom,
-                   uint16_t radius,
-                   uint8_t hue, uint8_t sat, uint8_t val,
-                   bool filled,
-                   uint8_t stroke_w)
-{
+bool qp_round_rect(painter_device_t dev, uint16_t left,  uint16_t top, uint16_t right, uint16_t bottom, uint16_t radius, uint8_t hue, uint8_t sat, uint8_t val, bool filled, uint8_t stroke_w) {
     uint16_t l = QP_MIN(left,  right);
     uint16_t r = QP_MAX(left,  right);
     uint16_t t = QP_MIN(top,   bottom);
@@ -252,12 +237,6 @@ bool qp_round_rect(painter_device_t dev,
     qp_comms_stop(dev);
     return ok;
 }
-
-// add ellipse_filled
-
-#ifndef M_PI
-#    define M_PI 3.14159265358979323846
-#endif
 
 bool qp_rotated_ellipse_filled(painter_device_t device, uint16_t centerx, uint16_t centery, uint16_t width, uint16_t height, float angle_deg, uint8_t hue, uint8_t sat, uint8_t val) {
     qp_dprintf("qp_rotated_ellipse_filled: entry\n");
@@ -337,24 +316,19 @@ bool qp_rotated_ellipse_filled(painter_device_t device, uint16_t centerx, uint16
     return ret;
 }
 
-// add riangle
 typedef struct {
     float x;
     float y;
 } qp_ptf_t;
 
-static inline qp_ptf_t qp_rotate_translate_pt(float x, float y,
-                                              float c, float s,
-                                              float tx, float ty) {
+static inline qp_ptf_t qp_rotate_translate_pt(float x, float y, float c, float s, float tx, float ty) {
     qp_ptf_t p;
     p.x = tx + x * c - y * s;
     p.y = ty + x * s + y * c;
     return p;
 }
 
-static bool qp_plot_thick_pixel(painter_device_t device,
-                                int16_t x, int16_t y,
-                                uint8_t stroke_w) {
+static bool qp_plot_thick_pixel(painter_device_t device, int16_t x, int16_t y, uint8_t stroke_w) {
     if (stroke_w == 0) {
         stroke_w = 1;
     }
@@ -379,10 +353,7 @@ static bool qp_plot_thick_pixel(painter_device_t device,
     return true;
 }
 
-static bool qp_line_thick_internal(painter_device_t device,
-                                   int16_t x0, int16_t y0,
-                                   int16_t x1, int16_t y1,
-                                   uint8_t stroke_w) {
+static bool qp_line_thick_internal(painter_device_t device, int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t stroke_w) {
     int16_t dx = abs(x1 - x0);
     int16_t sx = (x0 < x1) ? 1 : -1;
     int16_t dy = -abs(y1 - y0);
@@ -414,18 +385,11 @@ static bool qp_line_thick_internal(painter_device_t device,
     return true;
 }
 
-static inline float qp_edge_fn(qp_ptf_t a, qp_ptf_t b,
-                               float px, float py) {
+static inline float qp_edge_fn(qp_ptf_t a, qp_ptf_t b, float px, float py) {
     return (px - a.x) * (b.y - a.y) - (py - a.y) * (b.x - a.x);
 }
 
-bool qp_triangle_rotated(painter_device_t device,
-                         int16_t centerx, int16_t centery,
-                         uint16_t width, uint16_t height,
-                         float angle_deg,
-                         uint8_t hue, uint8_t sat, uint8_t val,
-                         bool filled,
-                         uint8_t stroke_w) {
+bool qp_triangle_rotated(painter_device_t device, int16_t centerx, int16_t centery, uint16_t width, uint16_t height, float angle_deg, uint8_t hue, uint8_t sat, uint8_t val, bool filled, uint8_t stroke_w) {
     painter_driver_t *driver = (painter_driver_t *)device;
     if (!driver || !driver->validate_ok) {
         return false;
@@ -518,12 +482,6 @@ out:
     qp_comms_stop(device);
     return ret;
 }
-
-
-// add mni mask
-
-
-//---------------------------
 
 typedef struct {
     uint8_t width;
@@ -643,27 +601,14 @@ static bool mni_get_pixel(uint8_t x, uint8_t y) {
         return false;
     }
 
-    // m: x = 0..19
     if (x <= 27) {
         return glyph_get_pixel(&glyph_m, x, y);
     }
 
-    // spacing: x = 20..23
-    // if (x >= 24 && x <= 27) {
-    //     return false;
-    // }
-
-    // n: x = 24..43
     if (x >= 28 && x <= 51) {
         return glyph_get_pixel(&glyph_n, x - 28, y);
     }
 
-    // // spacing: x = 44..47
-    // if (x >= 52 && x <= 55) {
-    //     return false;
-    // }
-
-    // i: x = 48..67
     if (x >= 52 && x <= 75) {
         return glyph_get_pixel(&glyph_i, x - 52, y);
     }
@@ -671,11 +616,7 @@ static bool mni_get_pixel(uint8_t x, uint8_t y) {
     return false;
 }
 
-bool qp_draw_mni_rotated_solid(painter_device_t device,
-                               int16_t centerx, int16_t centery,
-                               float angle_deg,
-                               float scale,
-                               uint8_t hue, uint8_t sat, uint8_t val) {
+bool qp_draw_mni_rotated_solid(painter_device_t device, int16_t centerx, int16_t centery, float angle_deg, float scale, uint8_t hue, uint8_t sat, uint8_t val) {
     qp_dprintf("qp_draw_mni_rotated_solid: entry\n");
 
     painter_driver_t *driver = (painter_driver_t *)device;

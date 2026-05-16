@@ -36,14 +36,11 @@ bool omni_bg_invalidate(void);
 void omni_bg_task(void);
 void omni_bg_request_draw(void);
 void omni_bg_draw_now(void);
-
 bool omni_bg_is_valid(void);
 
 omni_bg_state_t omni_bg_get_state(void);
 uint8_t omni_bg_get_error(void);
 uint8_t omni_bg_get_progress_percent(void);
-
-
 
 void omni_bg_close_image(void);
 void omni_bg_request_draw(void);

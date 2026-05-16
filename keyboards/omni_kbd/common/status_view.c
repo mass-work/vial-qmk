@@ -22,11 +22,13 @@ static inline uint8_t clamp_u8(int16_t v, uint8_t lo, uint8_t hi) {
     if (v > hi) v = hi;
     return (uint8_t)v;
 }
+
 static inline uint8_t clamp_bar_x(int16_t x) {
     if (x < BAR_L) x = BAR_L;
     if (x > BAR_R) x = BAR_R;
     return (uint8_t)x;
 }
+
 static inline uint8_t clamp_0_100_x(int16_t x) {
     if (x < 0) x = 0;
     if (x > 100) x = 100;
@@ -87,6 +89,7 @@ static const toggle_cfg_t toggles[] = {
     { "AML", COL2_X, ROW2_Y, 0, "---", "---", "Auto mouse layer" },
     { "TRP", COL3_X, ROW2_Y, 2, "HLD", "RPT", "Touch repeat interval" },
 };
+
 #define NUM_TOG (sizeof(toggles)/sizeof(toggles[0]))
 
 static uint8_t os_tog_state[PROF_COUNT][NUM_TOG];
@@ -110,6 +113,7 @@ static inline prof_index_t current_profile_index(void) {
 bool sv_hrv_enabled_current(void) {
     return os_tog_state[current_profile_index()][IDX_HRV] != 0;
 }
+
 bool sv_hrh_enabled_current(void) {
     return os_tog_state[current_profile_index()][IDX_HRH] != 0;
 }
@@ -281,8 +285,8 @@ static void redraw_all(painter_device_t dev, painter_font_handle_t font) {
 }
 
 void load_params_from_prms(void){
-    uint8_t row1 = (g_default_layer == 0) ? 8 : 14;
-    uint8_t row2 = (g_default_layer == 0) ? 9 : 15;
+    uint8_t row1 = (g_default_layer == 0) ? 11 : 14;
+    uint8_t row2 = (g_default_layer == 0) ? 12 : 15;
     for (uint8_t i = 0; i < NUM_TOG; i++) {
         apply_to_param(i, true, dynamic_keymap_get_keycode(4, row1, i) - 0x7700);
         apply_to_param(i, false, dynamic_keymap_get_keycode(4, row2, i) - 0x7700);
@@ -309,7 +313,6 @@ void persist_load_all(void) {
     load_params_from_prms();
 }
 
-// ------------------------------------------------------------
 void ui_handle_touch(painter_device_t dev, painter_font_handle_t font, int16_t tx, int16_t ty) {
     const uint8_t line_height = (uint8_t)(font->line_height / 2);
 
@@ -322,17 +325,15 @@ void ui_handle_touch(painter_device_t dev, painter_font_handle_t font, int16_t t
 
             if (is_on_aos) {
                 os_variant_t cur = detected_host_os();
-                // default_layer_set(1UL << ((cur == OS_MACOS) ? _SUB : _BASE));
                 default_layer_set(1UL << layer_for_os(cur)); 
             } 
             g_default_layer = get_highest_layer(default_layer_state);
-            load_params_from_prms();  // デフォルトレイヤーに合わせて hi_res_* を反映
+            load_params_from_prms();
 
             sel_idx = -1;
             qp_rect(dev, 0, 130, 240, 150, 0, 0, 0, true);
             qp_rect(dev, 0, 160, 240, 240, 0, 0, 0, true);
             qp_drawtext_recolor(dev, (240/2) - qp_textwidth(font, "Automatic OS detection")/2, 130, font, "Automatic OS detection", hue_main_color, sat_main_color, 190, 0, 0, 0);
-            // persist_save_all();
             omni_status_save_toggle_aos(is_on_aos);
             redraw_all(dev, font);
             return;
@@ -380,8 +381,8 @@ void ui_handle_touch(painter_device_t dev, painter_font_handle_t font, int16_t t
         const bool new_state = (os_tog_state[pi][i] != 0);
         qp_rect(dev, 0, 130, 240, 150, 0, 0, 0, true);
         qp_rect(dev, 0, 160, 240, 240, 0, 0, 0, true);
-        uint8_t row1 = (g_default_layer == 0) ? 8 : 14;
-        uint8_t row2 = (g_default_layer == 0) ? 9 : 15;
+        uint8_t row1 = (g_default_layer == 0) ? 11 : 14;
+        uint8_t row2 = (g_default_layer == 0) ? 12 : 15;
 
         if (!new_state) {
             sel_idx = -1;

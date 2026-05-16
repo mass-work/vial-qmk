@@ -72,32 +72,23 @@ typedef enum {
 
 static omni_icon_state_t icon_state = OMNI_ICON_STATE_IDLE;
 static uint8_t icon_error = OMNI_ICON_ERROR_NONE;
-
 static uint8_t current_slot = 0;
 static uint8_t pending_slot = 0;
-
 static uint32_t expected_size = 0;
 static uint32_t expected_crc = 0;
 static uint32_t received_size = 0;
 static uint32_t programmed_size = 0;
 static uint32_t erase_offset = 0;
-
 static uint8_t page_buf[OMNI_ICON_FLASH_PAGE_SIZE];
 static uint16_t page_fill = 0;
-
 static uint32_t crc_work = 0xFFFFFFFFu;
-
 static bool begin_pending = false;
 static uint16_t begin_pending_timer = 0;
 static uint32_t pending_total_size = 0;
 static uint32_t pending_crc32 = 0;
 static uint16_t erase_start_timer = 0;
-
-// static painter_image_handle_t icon_qgf_image = NULL;
-// static bool icon_qgf_load_failed = false;
 static painter_image_handle_t icon_qgf_images[OMNI_ICON_SLOT_COUNT] = {0};
 static bool icon_qgf_load_failed[OMNI_ICON_SLOT_COUNT] = {0};
-
 
 static const uint8_t *flash_ptr(uint32_t flash_offset) {
     return (const uint8_t *)(XIP_BASE + flash_offset);
@@ -232,17 +223,6 @@ bool omni_icon_is_valid(uint8_t slot) {
     return true;
 }
 
-// void omni_icon_close_image(uint8_t slot) {
-//     (void)slot;
-
-//     if (icon_qgf_image != NULL) {
-//         qp_close_image(icon_qgf_image);
-//         icon_qgf_image = NULL;
-//     }
-
-//     icon_qgf_load_failed = false;
-// }
-
 void omni_icon_close_image(uint8_t slot) {
     if (!is_valid_slot(slot)) {
         return;
@@ -256,34 +236,9 @@ void omni_icon_close_image(uint8_t slot) {
     icon_qgf_load_failed[slot] = false;
 }
 
-// painter_image_handle_t omni_icon_get_image(uint8_t slot) {
-//     if (!is_valid_slot(slot)) {
-//         return NULL;
-//     }
-
-//     if (icon_qgf_image != NULL) {
-//         return icon_qgf_image;
-//     }
-
-//     if (icon_qgf_load_failed) {
-//         return NULL;
-//     }
-
-//     if (!omni_icon_is_valid(slot)) {
-//         icon_qgf_load_failed = true;
-//         return NULL;
-//     }
-
-//     const void *qgf = flash_ptr(slot_data_offset(slot));
-//     icon_qgf_image = qp_load_image_mem(qgf);
-
-//     if (icon_qgf_image == NULL) {
-//         icon_qgf_load_failed = true;
-//         return NULL;
-//     }
-
-//     return icon_qgf_image;
-// }
+__attribute__((weak)) void omni_icon_on_changed(uint8_t slot) {
+    (void)slot;
+}
 
 painter_image_handle_t omni_icon_get_image(uint8_t slot) {
     if (!is_valid_slot(slot)) {
@@ -319,7 +274,6 @@ painter_image_handle_t* omni_icon_get_image_ptr(uint8_t slot) {
         return NULL;
     }
 
-    // 未ロードならここでロードを試す
     (void)omni_icon_get_image(slot);
 
     return &icon_qgf_images[slot];

@@ -27,7 +27,10 @@
   { "name": "Right TB Mode", "title": "Toggle right trackball mode", "shortName": "TbrCg" },
   { "name": "Left TB Mode", "title": "Toggle left trackball mode", "shortName": "TblCg" },
 
-  { "name": "Touch Key", "title": "Activate touch key mode", "shortName": "TcKey" },
+  { "name": "Touch Key", "title": "Activate touch key mode0", "shortName": "TcKy0" },
+  { "name": "Touch Key", "title": "Activate touch key mode1", "shortName": "TcKy1" },
+  { "name": "Touch Key", "title": "Activate touch key mode2", "shortName": "TcKy2" },
+  { "name": "Touch Key", "title": "Activate touch key mode3", "shortName": "TcKy3" },
   { "name": "TB Tune", "title": "Activate trackball tuning mode", "shortName": "TbTun" },
   { "name": "Swipe Gesture", "title": "Activate swipe gesture mode", "shortName": "SwGst" },
   { "name": "Touch Matrix", "title": "Activate keymap mode", "shortName": "KeyMp" },
@@ -96,12 +99,12 @@
       [{ "y": -1.2, "x":  9, "r": -8 }, "19,3"],
       [{ "y": -0.8, "x": 14, "r": -8 }, "19,5"],
 
-      [{ "y": -4.5, "x": 7.6, "r": 0 }, "5,4"],
+      [{ "y":   -5, "x": 7.6, "r": 0 }, "5,4"],
       [{ "y":    1, "x": 7.6, "r": 0 }, "5,5"],
       [{ "y":   -2, "x": 7.1, "r": 0 }, "4,4"],
       [{ "y":   -1, "x": 8.1, "r": 0 }, "4,5"],
 
-      [{ "y":  0.5, "x": 12, "r": 0 }, "4,0"],
+      [{ "y":    1, "x": 12, "r": 0 }, "4,0"],
       [{ "y":    0, "x": 12, "r": 0 }, "4,1"],
       [{ "y": -1.5, "x": 11, "r": 0 }, "4,2"],
       [{ "y":   -1, "x": 13, "r": 0 }, "4,3"],
@@ -167,14 +170,15 @@
       [{ "y": -2, "x": 25.5, "r": 0 }, "13,4"],
       [{ "y": -1, "x": 26.5, "r": 0 }, "13,5"],
 
-      [{ "y": -4.2, "x": 28.5, "r": 0 }, "14,0"],
-      [{ "y": 0, "x": 28.5, "r": 0 }, "14,1"],
-      [{ "y": 0, "x": 28.5, "r": 0 }, "14,2"],
-      [{ "y": 0.2, "x": 28.5, "r": 0 }, "14,3"],
-      [{ "y": 0, "x": 28.5, "r": 0 }, "14,4"],
+      [{ "y":  0, "x": 17, "r": 0 }, "14,0"],
+      [{ "y": -1, "x": 20, "r": 0 }, "14,1"],
+      [{ "y": -1, "x": 23, "r": 0 }, "14,2"],
+      [{ "y": -1, "x": 26, "r": 0 }, "14,3"],
+      
+      [{ "y": -5.2, "x": 28.5, "r": 0 }, "14,4"],
       [{ "y": 0, "x": 28.5, "r": 0 }, "14,5"],
 
-      [{ "y": -6.2, "x": 29.5, "r": 0 }, "15,0"],
+      [{ "y": -2, "x": 29.5, "r": 0 }, "15,0"],
       [{ "y": 0, "x": 29.5, "r": 0 }, "15,1"],
       [{ "y": 0, "x": 29.5, "r": 0 }, "15,2"],
       [{ "y": 0.2, "x": 29.5, "r": 0 }, "15,3"],

@@ -10,6 +10,7 @@ bool omni_icon_is_valid(uint8_t slot);
 painter_image_handle_t omni_icon_get_image(uint8_t slot);
 painter_image_handle_t* omni_icon_get_image_ptr(uint8_t slot);
 void omni_icon_close_image(uint8_t slot);
+void omni_icon_on_changed(uint8_t slot);
 
 bool omni_icon_schedule_begin_upload(uint8_t slot, uint32_t total_size, uint32_t expected_crc);
 bool omni_icon_begin_upload(uint8_t slot, uint32_t total_size, uint32_t expected_crc);

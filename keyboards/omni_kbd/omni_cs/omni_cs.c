@@ -53,66 +53,49 @@ static uint16_t blink_start_time = 0;
 static bool is_backlight_off = false;
 bool lcd_is_on = true;
 
-// void initialize_lcd_layer_app_images(void) {
-//     for (int j = 0; j < 4; j++) {
-//         lcd_layer_app_images[j][0] = (ImagePosition){get_layer_img_func(j), home_point.x, home_point.y};
-//         for (int k = 0; k < 6; k++) {
-//             lcd_layer_app_images[j][k + 1] = (ImagePosition){get_img_func(virtual_keycode[k + j*6]), circles[k].x, circles[k].y};
-//         }
-//     }
-// }
-
-
-// add
-void initialize_lcd_layer_app_images(void) {
-    for (int j = 0; j < 4; j++) {
-        lcd_layer_app_images[j][0] = (ImagePosition){get_layer_img_func(j), home_point.x, home_point.y};
-        for (int k = 0; k < 6; k++) {
-            uint8_t slot = k + j * 6;
-            uint16_t keycode = virtual_keycode[slot];
-            lcd_layer_app_images[j][k + 1] = (ImagePosition){get_img_func_for_slot(keycode, slot), circles[k].x, circles[k].y};          
-        }
-    }
-}
-// add end
-
-// void update_lcd_view_data(void){
-//     draw_background_all_black();
-//     initialize_lcd_layer_app_images();
-//     draw_lcd_layer_category_images();
-// }
-
-
-
-// void load_virtual_keys(void) {
-//     for (int row = 0; row < MATRIX_ROWS / 2; row++) {
-//         for (int j = 0; j < MATRIX_COLS; j++) {
-//             import_keymaps[row][j] = keymap_key_to_keycode(2, (keypos_t){.row = row, .col = j});
-//         }
-//     }
-//     int i = 0;
-//     for (int row = 0; row < MATRIX_ROWS / 2; row++) {
-//         if (row == 0 || row == 1 || row == 2 || row == 3) {
-//             continue;
-//         }
-//         for (int col = 0; col < MATRIX_COLS; col++) {
-//             virtual_keycode[i] = import_keymaps[row][col];
-//             i++;
-//         }
-//     }
-// }
-
 #define TOUCH_DRAW_LAYER      0
 #define TOUCH_DRAW_ROW_START  10
 #define TOUCH_DRAW_ROW_COUNT  4
 #define TOUCH_DRAW_COL_COUNT  6
 
+#define TOUCH_CENTER_DRAW_ROW         14
+#define TOUCH_CENTER_DRAW_COL_COUNT   4
+#define TOUCH_CENTER_ICON_SLOT_START  24
+#define TOUCH_CUSTOM_ICON_SLOT_COUNT  28
+
+void initialize_lcd_layer_app_images(void) {
+    for (int page = 0; page < 4; page++) {
+        uint8_t center_slot = TOUCH_CENTER_ICON_SLOT_START + page;
+
+        uint16_t center_keycode = dynamic_keymap_get_keycode(
+            TOUCH_DRAW_LAYER,
+            TOUCH_CENTER_DRAW_ROW,
+            page
+        );
+
+        lcd_layer_app_images[page][0] = (ImagePosition){
+            get_center_img_func_for_slot(center_keycode, center_slot, page),
+            home_point.x,
+            home_point.y
+        };
+
+        for (int k = 0; k < 6; k++) {
+            uint8_t slot = k + page * 6;
+            uint16_t keycode = virtual_keycode[slot];
+
+            lcd_layer_app_images[page][k + 1] = (ImagePosition){
+                get_img_func_for_slot(keycode, slot),
+                circles[k].x,
+                circles[k].y
+            };
+        }
+    }
+}
+
 void load_virtual_keys(void) {
     int i = 0;
-
     for (int row = TOUCH_DRAW_ROW_START; row < TOUCH_DRAW_ROW_START + TOUCH_DRAW_ROW_COUNT; row++) {
         for (int col = 0; col < TOUCH_DRAW_COL_COUNT; col++) {
-            // virtual_keycode[i] = keymap_key_to_keycode(TOUCH_DRAW_LAYER, (keypos_t){.row = row, .col = col});
             virtual_keycode[i] = dynamic_keymap_get_keycode(TOUCH_DRAW_LAYER, row, col);
             i++;
         }
@@ -124,6 +107,16 @@ void update_lcd_view_data(void){
     draw_background_all_black();
     initialize_lcd_layer_app_images();
     draw_lcd_layer_category_images();
+}
+
+void omni_icon_on_changed(uint8_t slot) {
+    if (slot >= TOUCH_CUSTOM_ICON_SLOT_COUNT) {
+        return;
+    }
+
+    if (display_mode == DISPLAY_MODE_TOUCH_KEY) {
+        update_lcd_view_data();
+    }
 }
 
 void pointing_device_init_kb(void) {
@@ -179,34 +172,6 @@ void keyboard_post_init_kb(void) {
     tb_gesture_config_force_update();
 }
 
-
-
-
-// add
-// static bool tb_main_gesture_enabled = false;
-// static bool tb_sub_gesture_enabled  = false;
-// static uint8_t tb_gesture_cache_layer = 255;
-
-// bool tb_main_gesture_is_enabled(void) {
-//     return tb_main_gesture_enabled;
-// }
-
-// bool tb_sub_gesture_is_enabled(void) {
-//     return tb_sub_gesture_enabled;
-// }
-
-// void tb_gesture_config_update(void) {
-//     uint8_t layer = get_highest_layer(layer_state | default_layer_state);
-
-//     tb_main_gesture_enabled = tb_tap_has_any_key_on_layer(tb_tap_keypos_main, layer);
-//     tb_sub_gesture_enabled  = tb_tap_has_any_key_on_layer(tb_tap_keypos_sub, layer);
-
-//     tb_gesture_cache_layer = layer;
-// }
-
-
-
-
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     current_layer = get_highest_layer(layer_state);
     
@@ -242,39 +207,19 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
         tb_state = false;
     }
 
-    // if (tb_mode_r == TRACKBALL_CURSOR){
-    //     process_cursor_report(&mouse_report, report0, speed_adjust1, slope_factor1, 1, 1, 2);
-    // } else if (tb_mode_r == TRACKBALL_TAP) {
-    //     // process_high_res_scroll_report(&mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0);
-    //     process_tb_gesture_report(&mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0, is_haptic);
-    // }
-
-    // if (tb_mode_l == TRACKBALL_CURSOR){
-    //     process_cursor_report(&mouse_report, report1, speed_adjust1, slope_factor1, -1, -1, 2);
-    // } else if (tb_mode_l == TRACKBALL_TAP) {
-    //     // process_high_res_scroll_report(&mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0);
-    //     process_tb_gesture_report(&mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0, is_haptic);
-    // }
-
-    // Sensor #1 / main ball / row 4
-
     tb_gesture_config_update_if_needed();
 
     if (tb_main_gesture_is_enabled()) {
         process_tb_gesture_report( &mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0, is_haptic, tb_main_tap_keypos());
     } else {
-        process_cursor_report( &mouse_report, report0, speed_adjust1, slope_factor1, 1, 1, 2);
+        process_cursor_report( &mouse_report, report0, speed_adjust1, slope_factor1, -1, 1, 2);
     }
 
-    // Sensor #2 / sub ball / row 5
     if (tb_sub_gesture_is_enabled()) {
         process_tb_gesture_report( &mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0, is_haptic, tb_sub_tap_keypos());
     } else {
-        process_cursor_report( &mouse_report, report1, speed_adjust1, slope_factor1, -1, -1, 2);
+        process_cursor_report( &mouse_report, report1, speed_adjust1, slope_factor1, 1, -1, 2);
     }
-
-
-
 
     if (ENABLE_TOUCH_UPDATE == 1) {
         if (touch_signal_view_update) {
@@ -292,12 +237,7 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     }
     if (!is_first_frame) {
         if (is_second_frame) {
-            if (omni_bg_is_valid()) {
-                omni_bg_draw_now();
-            } else {
-                display_redraw();
-            }
-            
+            display_redraw();
             qp_flush(display);
             is_second_frame = false;
         }
@@ -309,6 +249,9 @@ void matrix_scan_user(void) {
     process_touch_interrupt();
 }
 
+static uint16_t sleep_view_switch_timer = 0;
+static bool sleep_view_show_picture = true;
+
 void sleeping_kb(bool matrix_changed) {
     if (matrix_changed || tb_state || touch_start_flag){ 
         sleeping_timer = timer_read();
@@ -316,11 +259,7 @@ void sleeping_kb(bool matrix_changed) {
             if (!lcd_is_on){
                 lcd_is_on = power_on_lcd();
             }
-            if (omni_bg_is_valid()) {
-                omni_bg_draw_now();
-            } else {
-                display_redraw();
-            }
+            display_redraw();
             sleeping_state = false;
         }
     }
@@ -328,9 +267,14 @@ void sleeping_kb(bool matrix_changed) {
         if (timer_elapsed(sleeping_timer) >= SLEEPING_KB_TIME) {
             lcd_is_on = power_off_lcd();
             sleeping_state = true;
+
+            sleep_view_switch_timer = timer_read();
+            sleep_view_show_picture = true;
+            fast_draw_matrix_code_rain = false;
         }
     } else if (SLEEP_VIEW == 0) {
         return;
+
     } else if(SLEEP_VIEW == 1) {
         if (timer_elapsed(draw_matrix_code_rain_timer) > 50) {
             draw_matrix_code_rain_timer = timer_read();
@@ -344,10 +288,49 @@ void sleeping_kb(bool matrix_changed) {
             update_matrix_code_rain();
             draw_matrix_code_rain(display, noto11_font);
         }
-    } 
+
+    } else if (SLEEP_VIEW == 2) {
+        if (!lcd_is_on){
+            lcd_is_on = power_on_lcd();
+        }
+        omni_bg_draw_now();
+        
+    } else if (SLEEP_VIEW == 3) {
+        if (timer_elapsed(sleep_view_switch_timer) >= SLEEP_VIEW_SWITCH_TIME) {
+            sleep_view_switch_timer = timer_read();
+            sleep_view_show_picture = !sleep_view_show_picture;
+
+            if (!sleep_view_show_picture) {
+                fast_draw_matrix_code_rain = false;
+            }
+        }
+
+        if (sleep_view_show_picture) {
+            if (!lcd_is_on){
+                lcd_is_on = power_on_lcd();
+            }
+            omni_bg_draw_now();
+
+        } else {
+            if (timer_elapsed(draw_matrix_code_rain_timer) > 50) {
+                draw_matrix_code_rain_timer = timer_read();
+
+                if (!lcd_is_on) {
+                    lcd_is_on = power_on_lcd();
+                }
+
+                if (!fast_draw_matrix_code_rain) {
+                    init_matrix_code_rain();
+                    fast_draw_matrix_code_rain = true;
+                }
+
+                update_matrix_code_rain();
+                draw_matrix_code_rain(display, noto11_font);
+            }
+        }
+    }
 }
 
-// add draw_test
 uint8_t draw_counter = 0;
 uint16_t draw_stress_timer = 0;
 uint16_t draw_test_time = 3000;
@@ -415,6 +398,7 @@ void housekeeping_task_user(void) {
         }   
     }
     // draw_test();
+    tb_tap_pending_task();
     omni_bg_task();
     omni_icon_task();
 }
@@ -430,14 +414,9 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case KC_hue_bg_UP:
             hue_bg = (hue_bg + 16) % 256;
-
-            // uprintf("------------------DF--------------------\n");
-            // uprintf("x : %d, y : %d\n", touch_x, touch_y);
-            // uprintf("px: %d, py: %d\n", pre_touch_x, pre_touch_y);
             break;
         case KC_hue_bg_DOWN:
             hue_bg = (hue_bg >= 16) ? (hue_bg - 16) : (hue_bg + 240); 
- 
             break;
         case KC_sat_bg_UP:
             sat_bg = (sat_bg + 16 <= 254) ? sat_bg + 16 : 254;
@@ -497,15 +476,29 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case TB_L_MODE_TOGGLE:
             tb_mode_l = TRACKBALL_CURSOR;
             return false;
-        case KC_DP_TOUCH_KEY:
+        case KC_DP_TOUCH_KEY0:
             display_mode =  DISPLAY_MODE_TOUCH_KEY;
-            current_lcd_layer ++;
-            if (current_lcd_layer > 3) {
-                current_lcd_layer = 0;
-            }
+            current_lcd_layer = 0;
             draw_background_all_black();
             draw_lcd_layer_category_images();
-
+            break;
+        case KC_DP_TOUCH_KEY1:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 1;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
+        case KC_DP_TOUCH_KEY2:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 2;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
+        case KC_DP_TOUCH_KEY3:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 3;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
             break;
         case KC_DP_TB_TUNE: 
             display_mode =  DISPLAY_MODE_TRACKBALL_TUNING;
@@ -513,10 +506,11 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             break;
         case KC_DP_SWIPE_GESTURE:
             display_mode =  DISPLAY_MODE_SWIPE_GESTURE;
-            draw_background_all();
-            swipe_gesture_layer_view_update();
-            swipe_gesture_base_view_update();
-            swipe_gesture_main_view_update(current_lcd_layer);
+            if (omni_bg_is_valid()) {
+                omni_bg_draw_now();
+            } else {
+                display_redraw();
+            }
             break;
         case KC_DP_KEY_MAT:
             display_mode =  DISPLAY_MODE_KEY_MATRIX;
@@ -532,12 +526,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     }
     if(display_mode == DISPLAY_MODE_SWIPE_GESTURE) {
         save_omni_color_config();
-
-        if (omni_bg_is_valid()) {
-            omni_bg_draw_now();
-        } else {
-            display_redraw();
-        }
     }
     return false;
 }
@@ -554,18 +542,11 @@ void __wrap_dynamic_keymap_set_keycode(uint8_t layer, uint8_t row, uint8_t col, 
     if (keymap_change_update_flag){
         load_virtual_keys();
         initialize_lcd_layer_app_images();
-        // update_lcd_view_data();
         load_omni_tb_config();
         load_omni_color_config();
         persist_load_all();
-        display_mode =  DISPLAY_MODE_TOUCH_KEY;
-        
-        if (omni_bg_is_valid()) {
-            omni_bg_draw_now();
-        } else {
-            display_redraw();
-        }        
-        // display_redraw();
+        display_mode = DISPLAY_MODE_TOUCH_KEY;
+        display_redraw();
     }
     tb_gesture_config_force_update();
 }

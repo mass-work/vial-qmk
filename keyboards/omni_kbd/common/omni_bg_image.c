@@ -61,37 +61,28 @@ typedef struct __attribute__((packed)) {
     uint16_t format;
     uint32_t data_size;
     uint32_t crc32;
-    uint8_t  reserved[236]; // total 256byte
+    uint8_t  reserved[236];
 } omni_bg_header_t;
 
 static painter_device_t bg_display = NULL;
-
 static omni_bg_state_t bg_state = OMNI_BG_STATE_IDLE;
 static uint8_t bg_error = OMNI_BG_ERROR_NONE;
-
 static uint32_t expected_size = 0;
 static uint32_t expected_crc = 0;
-
 static uint32_t received_size = 0;
 static uint32_t programmed_size = 0;
 static uint32_t erase_offset = 0;
-
 static uint8_t page_buf[OMNI_BG_FLASH_PAGE_SIZE];
 static uint16_t page_fill = 0;
-
 static uint32_t crc_work = 0xFFFFFFFFu;
-
 static bool draw_requested = false;
-
 static bool begin_pending = false;
 static uint16_t begin_pending_timer = 0;
-
 static uint16_t pending_width = 0;
 static uint16_t pending_height = 0;
 static uint8_t pending_format = 0;
 static uint32_t pending_total_size = 0;
 static uint32_t pending_crc32 = 0;
-
 static uint16_t erase_start_timer = 0;
 
 static const uint8_t *flash_ptr(uint32_t flash_offset) {
@@ -198,63 +189,6 @@ void omni_bg_set_display(painter_device_t display) {
     bg_display = display;
 }
 
-// bool omni_bg_is_valid(void) {
-//     const omni_bg_header_t *header = (const omni_bg_header_t *)flash_ptr(OMNI_BG_FLASH_OFFSET);
-
-//     if (header->magic != OMNI_BG_MAGIC) {
-//         return false;
-//     }
-
-//     if (header->version != OMNI_BG_VERSION) {
-//         return false;
-//     }
-
-//     if (header->width != OMNI_BG_WIDTH || header->height != OMNI_BG_HEIGHT) {
-//         return false;
-//     }
-
-//     if (header->format != OMNI_BG_FORMAT_RGB565) {
-//         return false;
-//     }
-
-//     if (header->data_size != OMNI_BG_IMAGE_SIZE) {
-//         return false;
-//     }
-
-//     return true;
-// }
-
-// bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint32_t total_size, uint32_t crc32) {
-//     if (bg_state == OMNI_BG_STATE_ERASING || bg_state == OMNI_BG_STATE_WRITING) {
-//         set_error(OMNI_BG_ERROR_BUSY);
-//         return false;
-//     }
-
-//     if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT || total_size != OMNI_BG_IMAGE_SIZE) {
-//         set_error(OMNI_BG_ERROR_BAD_SIZE);
-//         return false;
-//     }
-
-//     if (format != OMNI_BG_FORMAT_RGB565) {
-//         set_error(OMNI_BG_ERROR_BAD_FORMAT);
-//         return false;
-//     }
-
-//     pending_width = width;
-//     pending_height = height;
-//     pending_format = format;
-//     pending_total_size = total_size;
-//     pending_crc32 = crc32;
-
-//     begin_pending_timer = timer_read();
-//     begin_pending = true;
-
-//     bg_error = OMNI_BG_ERROR_NONE;
-//     bg_state = OMNI_BG_STATE_IDLE;
-
-//     return true;
-// }
-
 bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint32_t total_size, uint32_t crc32) {
     if (bg_state == OMNI_BG_STATE_ERASING || bg_state == OMNI_BG_STATE_WRITING) {
         set_error(OMNI_BG_ERROR_BUSY);
@@ -291,24 +225,12 @@ bool omni_bg_schedule_begin_upload(uint16_t width, uint16_t height, uint8_t form
     return true;
 }
 
-
 bool omni_bg_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint32_t total_size, uint32_t crc32) {
     if (bg_state == OMNI_BG_STATE_ERASING || bg_state == OMNI_BG_STATE_WRITING) {
         set_error(OMNI_BG_ERROR_BUSY);
         return false;
     }
 
-    // if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT || total_size != OMNI_BG_IMAGE_SIZE) {
-    //     set_error(OMNI_BG_ERROR_BAD_SIZE);
-    //     return false;
-    // }
-
-    // if (format != OMNI_BG_FORMAT_RGB565) {
-    //     set_error(OMNI_BG_ERROR_BAD_FORMAT);
-    //     return false;
-    // }
-
-    // add
     if (width != OMNI_BG_WIDTH || height != OMNI_BG_HEIGHT) {
         set_error(OMNI_BG_ERROR_BAD_SIZE);
         return false;
@@ -324,8 +246,6 @@ bool omni_bg_begin_upload(uint16_t width, uint16_t height, uint8_t format, uint3
         return false;
     }
     omni_bg_close_image();
-    // add fin
-
 
     expected_size = total_size;
     expected_crc = crc32;
@@ -417,7 +337,6 @@ bool omni_bg_invalidate(void) {
     uint8_t page[OMNI_BG_FLASH_PAGE_SIZE];
     memset(page, 0xFF, sizeof(page));
 
-    // magicを0に潰す。eraseなしで無効化。
     page[0] = 0x00;
     page[1] = 0x00;
     page[2] = 0x00;
@@ -434,78 +353,6 @@ bool omni_bg_invalidate(void) {
 void omni_bg_request_draw(void) {
     draw_requested = true;
 }
-
-// void omni_bg_draw_now(void) {
-//     if (bg_display == NULL) {
-//         return;
-//     }
-
-//     if (!omni_bg_is_valid()) {
-//         return;
-//     }
-
-//     const uint8_t *img = flash_ptr(OMNI_BG_PIXEL_OFFSET);
-
-//     const uint16_t lines_per_chunk = 16;
-
-//     for (uint16_t y = 0; y < OMNI_BG_HEIGHT; y += lines_per_chunk) {
-//         uint16_t lines = lines_per_chunk;
-
-//         if (y + lines > OMNI_BG_HEIGHT) {
-//             lines = OMNI_BG_HEIGHT - y;
-//         }
-
-//         const uint8_t *src = img + ((uint32_t)y * OMNI_BG_WIDTH * OMNI_BG_BYTES_PER_PIXEL);
-
-//         qp_viewport(bg_display, 0, y, OMNI_BG_WIDTH - 1, y + lines - 1);
-//         qp_pixdata(bg_display, src, (uint32_t)OMNI_BG_WIDTH * lines);
-//     }
-
-//     qp_flush(bg_display);
-// }
-
-// void omni_bg_draw_now(void) {
-//     if (bg_display == NULL) {
-//         return;
-//     }
-//     if (!omni_bg_is_valid()) {
-//         return;
-//     }
-//     painter_driver_t *driver = (painter_driver_t *)bg_display;
-//     if (!driver || !driver->validate_ok) {
-//         return;
-//     }
-//     const uint8_t *img = flash_ptr(OMNI_BG_PIXEL_OFFSET);
-//     // const uint16_t lines_per_chunk = 4;
-//     const uint16_t lines_per_chunk = 120;
-//     if (!qp_comms_start(bg_display)) {
-//         return;
-//     }
-//     bool ok = true;
-
-//     if (!driver->driver_vtable->viewport( bg_display, 0, 0, OMNI_BG_WIDTH - 1, OMNI_BG_HEIGHT - 1)) {
-//         ok = false;
-//     }
-//     if (ok) {
-//         for (uint16_t y = 0; y < OMNI_BG_HEIGHT; y += lines_per_chunk) {
-//             uint16_t lines = lines_per_chunk;
-//             if (y + lines > OMNI_BG_HEIGHT) {
-//                 lines = OMNI_BG_HEIGHT - y;
-//             }
-//             const uint8_t *src =
-//                 img + ((uint32_t)y * OMNI_BG_WIDTH * OMNI_BG_BYTES_PER_PIXEL);
-//             uint32_t pixel_count = (uint32_t)OMNI_BG_WIDTH * lines;
-//             if (!driver->driver_vtable->pixdata(bg_display, src, pixel_count)) {
-//                 ok = false;
-//                 break;
-//             }
-//         }
-//     }
-//     qp_comms_stop(bg_display);
-//     // qp_flush(bg_display);
-// }
-
-
 
 static painter_image_handle_t bg_qgf_image = NULL;
 static bool bg_qgf_load_failed = false;
@@ -661,70 +508,3 @@ uint8_t omni_bg_get_progress_percent(void) {
 
     return (uint8_t)((received_size * 100u) / expected_size);
 }
-
-
-
-// ----------------------------------------------------------
-
-
-
-
-
-// void omni_bg_task(void) {
-//     if (begin_pending) {
-//         if (timer_elapsed(begin_pending_timer) < OMNI_BG_BEGIN_START_DELAY_MS) {
-//             return;
-//         }
-
-//         begin_pending = false;
-//         omni_bg_begin_upload(
-//             pending_width,
-//             pending_height,
-//             pending_format,
-//             pending_total_size,
-//             pending_crc32
-//         );
-//         return;
-//     }
-
-//     if (bg_state == OMNI_BG_STATE_ERASING) {
-//         if (timer_elapsed(erase_start_timer) < OMNI_BG_ERASE_START_DELAY_MS) {
-//             return;
-//         }
-
-//         flash_erase_4k(OMNI_BG_FLASH_OFFSET + erase_offset);
-
-//         erase_offset += OMNI_BG_FLASH_SECTOR_SIZE;
-
-//         if (erase_offset >= OMNI_BG_SLOT_SIZE) {
-//             bg_state = OMNI_BG_STATE_READY;
-//         }
-
-//         return;
-//     }
-
-//     if (draw_requested) {
-//         draw_requested = false;
-//         omni_bg_draw_now();
-//     }
-// }
-
-// omni_bg_state_t omni_bg_get_state(void) {
-//     return bg_state;
-// }
-
-// uint8_t omni_bg_get_error(void) {
-//     return bg_error;
-// }
-
-// uint8_t omni_bg_get_progress_percent(void) {
-//     if (bg_state == OMNI_BG_STATE_ERASING) {
-//         return (uint8_t)((erase_offset * 100u) / OMNI_BG_SLOT_SIZE);
-//     }
-
-//     if (expected_size == 0) {
-//         return 0;
-//     }
-
-//     return (uint8_t)((received_size * 100u) / expected_size);
-// }

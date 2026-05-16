@@ -20,3 +20,4 @@ bool tb_main_gesture_is_enabled(void);
 bool tb_sub_gesture_is_enabled(void);
 
 
+void tb_tap_pending_task(void);

@@ -7,7 +7,8 @@
 
 #define ENABLE_TOUCH_UPDATE   1 
 #define SLEEPING_KB_TIME      60000
-#define SLEEP_VIEW            1 // 1: code rain
+#define SLEEP_VIEW            2 // 0: none 1: code rain 2: picture 3:picture and code rain
+#define SLEEP_VIEW_SWITCH_TIME  30000 // 30 sec
 
 typedef enum {
     TRACKBALL_CURSOR = 0,
@@ -35,7 +36,10 @@ enum custom_keycodes {
     KC_val_sub_color_DOWN,
     TB_R_MODE_TOGGLE,
     TB_L_MODE_TOGGLE,
-    KC_DP_TOUCH_KEY,
+    KC_DP_TOUCH_KEY0,
+    KC_DP_TOUCH_KEY1,
+    KC_DP_TOUCH_KEY2,
+    KC_DP_TOUCH_KEY3,
     KC_DP_TB_TUNE,
     KC_DP_SWIPE_GESTURE,
     KC_DP_KEY_MAT,

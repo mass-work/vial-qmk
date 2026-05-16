@@ -65,7 +65,7 @@
 #define HAPTIC_DEFAULT_MODE 26
 
 #define OMNI_BG_FLASH_OFFSET 0x1C0000u
-#define OMNI_BG_SLOT_SIZE    0x20000u  // 128KB
+#define OMNI_BG_SLOT_SIZE    0x20000u
 #define OMNI_BG_WIDTH        240
 #define OMNI_BG_HEIGHT       240
 
