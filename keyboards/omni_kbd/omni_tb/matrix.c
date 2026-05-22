@@ -10,12 +10,21 @@
 #include "debounce.h"
 #include "atomic_util.h"
 #include "omni_tb.h"
+#include "../common/touch_lcd_omni.h"
 #include <math.h>
 #include "config.h"
 #include "timer.h"
 
 static const pin_t row_pins[MATRIX_ROWS] = MATRIX_ROW_PINS;
 static const pin_t col_pins[MATRIX_COLS] = MATRIX_COL_PINS;
+
+#define TOUCH_MATRIX_HOLD_MS 20
+static bool     touch_matrix_active = false;
+static bool     touch_matrix_pressed = false;
+static uint8_t  touch_matrix_row = 0xFF;
+static uint8_t  touch_matrix_col = 0xFF;
+static uint16_t touch_matrix_timer = 0;
+
 
 static void select_row(uint8_t row)
 {
@@ -153,7 +162,6 @@ static bool read_rows_on_col(matrix_row_t current_matrix[], uint8_t current_col)
 }
 
 void matrix_init_custom(void) {
-    // initialize key pins
     init_pins();
 }
 
@@ -170,79 +178,122 @@ int check_touch_within_radius(uint16_t touch_x, uint16_t touch_y, point_t circle
     return 255; 
 }
 
-
 bool get_touch_coordinates(uint8_t *row, uint8_t *col, uint16_t touch_x, uint16_t touch_y) {
-    uint8_t touched_index = check_touch_within_radius(touch_x, touch_y, circles, 6, 30);
-    if (touched_index != 255) {
-        if (touch_x <= TOUCH_LCD_WIDTH && touch_y <= TOUCH_LCD_HEIGHT) {
-            *row = (uint8_t)current_lcd_category + current_lcd_layer * (MAX_LCD_CATEGORY + 1) + MATRIX_ROWS + 4 ;
-            *col = (uint8_t)touched_index;
-            return true;
-        }
+    if (touch_x > TOUCH_LCD_WIDTH || touch_y > TOUCH_LCD_HEIGHT) {
+        *row = 0xFF;
+        *col = 0xFF;
+        return false;
     }
+
+    uint8_t touched_index = check_touch_within_radius(touch_x, touch_y, circles, 6, 30);
+
+    if (touched_index != 255) {
+        *row = (uint8_t)current_lcd_layer + 6;
+        *col = (uint8_t)touched_index;
+
+        // uprintf("[TOUCH HIT] x=%u y=%u signal=%u layer=%u row=%u col=%u\n",
+        //         touch_x, touch_y, touch_signal, current_lcd_layer, *row, *col);
+        return true;
+    }
+
     *row = 0xFF;
     *col = 0xFF;
     return false;
 }
 
-bool read_touch(matrix_row_t current_matrix[], bool call_to_row) {
+bool read_touch(matrix_row_t current_matrix[], bool touch_pressed) {
     bool matrix_changed = false;
     uint8_t row_index = 0, col_index = 0;
+
     if (get_touch_coordinates(&row_index, &col_index, touch_x, touch_y)) {
-        select_col(col_index);
-        matrix_io_delay();
         matrix_row_t last_row_value = current_matrix[row_index];
-        if (touch_signal) {
+
+        if (touch_pressed) {
             current_matrix[row_index] |= (MATRIX_ROW_SHIFTER << col_index);
         } else {
             current_matrix[row_index] &= ~(MATRIX_ROW_SHIFTER << col_index);
         }
-        if ((last_row_value != current_matrix[row_index]) && !(matrix_changed)) {
+
+        // uprintf("[READ_TOUCH] pressed=%u row=%u col=%u before=0x%04X after=0x%04X changed=%u\n",
+        //         touch_pressed,
+        //         row_index,
+        //         col_index,
+        //         last_row_value,
+        //         current_matrix[row_index],
+        //         last_row_value != current_matrix[row_index]);
+
+        if (last_row_value != current_matrix[row_index]) {
             matrix_changed = true;
         }
-        unselect_col(col_index);
-        }
+    }
+
     return matrix_changed;
 }
 
 
 extern matrix_row_t matrix[MATRIX_ROWS];
 
-static uint16_t last_touch_time = 0;
 static bool last_matrix_state = false;
 
-bool matrix_scan_custom(matrix_row_t current_matrix[])
-{
-    bool changed = false;
-    // Set row, read cols
-    for (uint8_t current_row = 0; current_row < MATRIX_ROWS / 2; current_row++) {
-    changed |= read_cols_on_row(current_matrix, current_row);
-    }
-    //else
-    // Set col, read rows
-    for (uint8_t current_col = 0; current_col < MATRIX_COLS; current_col++) {
-    changed |= read_rows_on_col(current_matrix, current_col);
+static void update_touch_matrix_state(void) {
+    uint8_t row = 0xFF;
+    uint8_t col = 0xFF;
+
+    if (touch_signal && get_touch_coordinates(&row, &col, touch_x, touch_y)) {
+        touch_matrix_row = row;
+        touch_matrix_col = col;
+        touch_matrix_active = true;
+        touch_matrix_pressed = true;
+        touch_matrix_timer = timer_read();
+        return;
     }
 
-    static bool touch_signal_latch = false;
-    if (touch_signal) {
-        touch_signal_latch = true;
+    if (touch_matrix_pressed && timer_elapsed(touch_matrix_timer) > TOUCH_MATRIX_HOLD_MS) {
+        touch_matrix_pressed = false;
     }
-    
+}
+
+static void apply_touch_matrix(matrix_row_t current_matrix[]) {
+    if (!touch_matrix_active || touch_matrix_row == 0xFF || touch_matrix_col == 0xFF) {
+        return;
+    }
+
+    if (touch_matrix_pressed) {
+        current_matrix[touch_matrix_row] |= (MATRIX_ROW_SHIFTER << touch_matrix_col);
+    } else {
+        current_matrix[touch_matrix_row] &= ~(MATRIX_ROW_SHIFTER << touch_matrix_col);
+    }
+
+    // uprintf("[TOUCH_APPLY] pressed=%u row=%u col=%u result=0x%04X\n",
+    //         touch_matrix_pressed,
+    //         touch_matrix_row,
+    //         touch_matrix_col,
+    //         current_matrix[touch_matrix_row]);
+
+    if (!touch_matrix_pressed) {
+        touch_matrix_active = false;
+        touch_matrix_row = 0xFF;
+        touch_matrix_col = 0xFF;
+        touch_x = 0xFFFF;
+        touch_y = 0xFFFF;
+    }
+}
+
+bool matrix_scan_custom(matrix_row_t current_matrix[]) {
+    matrix_row_t next_matrix[MATRIX_ROWS] = {0};
+
+    for (uint8_t current_row = 0; current_row < MATRIX_ROWS / 2; current_row++) {
+        read_cols_on_row(next_matrix, current_row);
+    }
+
+    for (uint8_t current_col = 0; current_col < MATRIX_COLS; current_col++) {
+        read_rows_on_col(next_matrix, current_col);
+    }
 
     switch (display_mode) {
         case DISPLAY_MODE_TOUCH_KEY:
-            if (!touch_signal_latch) {
-                touch_x = 0xFFFF;
-                touch_y = 0xFFFF;
-            }
-            if (timer_elapsed(last_touch_time) > touch_repeat_interval) {
-                if (read_touch(current_matrix, true)) {
-                    changed = true;
-                    last_touch_time = timer_read();  
-                    touch_signal_latch = false;
-                }
-            }
+            update_touch_matrix_state();
+            apply_touch_matrix(next_matrix);
             break;
 
         case DISPLAY_MODE_TRACKBALL_TUNING:
@@ -250,14 +301,22 @@ bool matrix_scan_custom(matrix_row_t current_matrix[])
 
         case DISPLAY_MODE_SWIPE_GESTURE:
             break;
-            
+
         default:
             break;
     }
 
-  last_matrix_state = changed;
-  return changed;
+    bool changed = memcmp(current_matrix, next_matrix, sizeof(next_matrix)) != 0;
+
+    if (changed) {
+        memcpy(current_matrix, next_matrix, sizeof(next_matrix));
+    }
+
+    last_matrix_state = changed;
+    return changed;
 }
+
+
 
 bool get_last_matrix_state(void) {
     return last_matrix_state;

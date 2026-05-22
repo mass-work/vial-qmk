@@ -1,7 +1,7 @@
 {
   "name": "omni_cs",
-  "vendorId": "0xDA73",
-  "productId": "0xA89F",
+  "vendorId": "0x2E8A",
+  "productId": "0x1121",
   "customKeycodes": [
   { "name": "H BG UP", "title": "Increase background hue", "shortName": "BgH+" },
   { "name": "H BG DW", "title": "Decrease background hue", "shortName": "BgH-" },

@@ -175,13 +175,7 @@ void keyboard_post_init_kb(void) {
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     current_layer = get_highest_layer(layer_state);
     
-    if(display_mode == DISPLAY_MODE_SWIPE_GESTURE) {
-        if (current_layer != pre_layer) {
-            #    ifndef TOUCH_GESTURE_VKEY_ENABLE
-            swipe_gesture_main_view_update(current_layer);
-            #    endif
-        }
-    } else if (display_mode ==  DISPLAY_MODE_KEY_MATRIX) {
+    if (display_mode ==  DISPLAY_MODE_KEY_MATRIX) {
         if (!get_auto_mouse_enable()) {
             if(current_layer != pre_layer){
                 draw_key_matrix(display, roboto_mono16, st2_mono16, current_layer);
@@ -212,13 +206,13 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     if (tb_main_gesture_is_enabled()) {
         process_tb_gesture_report( &mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0, is_haptic, tb_main_tap_keypos());
     } else {
-        process_cursor_report( &mouse_report, report0, speed_adjust1, slope_factor1, -1, 1, 2);
+        process_cursor_report( &mouse_report, report0, speed_adjust1, slope_factor1, -1, 1, 2, ORIENT_0);
     }
 
     if (tb_sub_gesture_is_enabled()) {
         process_tb_gesture_report( &mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0, is_haptic, tb_sub_tap_keypos());
     } else {
-        process_cursor_report( &mouse_report, report1, speed_adjust1, slope_factor1, 1, -1, 2);
+        process_cursor_report( &mouse_report, report1, speed_adjust1, slope_factor1, 1, -1, 2, ORIENT_0);
     }
 
     if (ENABLE_TOUCH_UPDATE == 1) {
@@ -272,10 +266,10 @@ void sleeping_kb(bool matrix_changed) {
             sleep_view_show_picture = true;
             fast_draw_matrix_code_rain = false;
         }
-    } else if (SLEEP_VIEW == 0) {
+    } else if (sleep_view_state == 0) {
         return;
 
-    } else if(SLEEP_VIEW == 1) {
+    } else if(sleep_view_state == 1) {
         if (timer_elapsed(draw_matrix_code_rain_timer) > 50) {
             draw_matrix_code_rain_timer = timer_read();
             if (!lcd_is_on){
@@ -289,13 +283,13 @@ void sleeping_kb(bool matrix_changed) {
             draw_matrix_code_rain(display, noto11_font);
         }
 
-    } else if (SLEEP_VIEW == 2) {
+    } else if (sleep_view_state == 2) {
         if (!lcd_is_on){
             lcd_is_on = power_on_lcd();
         }
         omni_bg_draw_now();
         
-    } else if (SLEEP_VIEW == 3) {
+    } else if (sleep_view_state == 3) {
         if (timer_elapsed(sleep_view_switch_timer) >= SLEEP_VIEW_SWITCH_TIME) {
             sleep_view_switch_timer = timer_read();
             sleep_view_show_picture = !sleep_view_show_picture;
@@ -399,8 +393,8 @@ void housekeeping_task_user(void) {
     }
     // draw_test();
     tb_tap_pending_task();
-    omni_bg_task();
     omni_icon_task();
+    omni_bg_task();
 }
 
 #include "haptic.h"
@@ -506,7 +500,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             break;
         case KC_DP_SWIPE_GESTURE:
             display_mode =  DISPLAY_MODE_SWIPE_GESTURE;
-            if (omni_bg_is_valid()) {
+            if (swipe_view_state == 1) {
                 omni_bg_draw_now();
             } else {
                 display_redraw();

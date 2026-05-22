@@ -43,12 +43,10 @@
 #define OMNI_BG_FLASH_SECTOR_SIZE 4096u
 #define OMNI_BG_FLASH_PAGE_SIZE   256u
 
-// 以前TX/RXが通っていた安定版として24byteに固定
 #define OMNI_BG_HID_PAYLOAD_MAX   24u
 #define OMNI_BG_ERASE_START_DELAY_MS 250u
 #define OMNI_BG_BEGIN_START_DELAY_MS 50u
 
-// 'O' 'M' 'B' 'G'
 #define OMNI_BG_MAGIC             0x47424D4Fu
 #define OMNI_BG_VERSION           1u
 
@@ -155,17 +153,6 @@ static bool write_header_valid(void) {
     uint8_t page[OMNI_BG_FLASH_PAGE_SIZE];
     memset(page, 0xFF, sizeof(page));
 
-    // omni_bg_header_t header = {
-    //     .magic     = OMNI_BG_MAGIC,
-    //     .version   = OMNI_BG_VERSION,
-    //     .width     = OMNI_BG_WIDTH,
-    //     .height    = OMNI_BG_HEIGHT,
-    //     .format    = OMNI_BG_FORMAT_RGB565,
-    //     .data_size = OMNI_BG_IMAGE_SIZE,
-    //     .crc32     = expected_crc,
-    // };
-
-    // add
     omni_bg_header_t header = {
         .magic     = OMNI_BG_MAGIC,
         .version   = OMNI_BG_VERSION,
@@ -175,9 +162,6 @@ static bool write_header_valid(void) {
         .data_size = expected_size,
         .crc32     = expected_crc,
     };  
-    // add fin
-
-
 
     memcpy(page, &header, sizeof(header));
 

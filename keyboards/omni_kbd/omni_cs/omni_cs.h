@@ -7,7 +7,6 @@
 
 #define ENABLE_TOUCH_UPDATE   1 
 #define SLEEPING_KB_TIME      60000
-#define SLEEP_VIEW            2 // 0: none 1: code rain 2: picture 3:picture and code rain
 #define SLEEP_VIEW_SWITCH_TIME  30000 // 30 sec
 
 typedef enum {

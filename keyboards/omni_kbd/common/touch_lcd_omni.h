@@ -59,13 +59,7 @@ void display_redraw(void);
 void draw_background_all(void);
 void draw_background_all_black(void);
 void draw_lcd_layer_category_images(void);
-void swipe_gesture_main_view_update(uint8_t current_layer);
 void process_touch_interrupt(void);
 void show_trackball_tuning_mode(void);
-void swipe_gesture_layer_view_update(void);
-void swipe_gesture_main_view_update(uint8_t current_layer);
-void swipe_gesture_base_view_update(void);
-void swipe_gesture_layer_view_update(void);
-void swipe_gesture_vkey_update(void);
 void swipe_gesture_swipe_omni_logo(void);
 

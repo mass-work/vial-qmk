@@ -61,3 +61,6 @@ bool omni_status_load_toggle_normal(uint8_t profile, uint8_t index);
 
 void omni_status_save_bar(uint8_t profile, bool upper, uint8_t index, uint8_t value);
 uint8_t omni_status_load_bar(uint8_t profile, bool upper, uint8_t index);
+
+extern uint8_t sleep_view_state;
+extern uint8_t swipe_view_state;

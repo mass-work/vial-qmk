@@ -39,14 +39,6 @@ SRC += ../icon/generated/layer_00.qgf.c
 SRC += ../icon/generated/layer_01.qgf.c
 SRC += ../icon/generated/layer_02.qgf.c
 SRC += ../icon/generated/layer_03.qgf.c
-SRC += ../icon/generated/layer_04.qgf.c
-SRC += ../icon/generated/layer_05.qgf.c
-SRC += ../icon/generated/layer_06.qgf.c
-SRC += ../icon/generated/layer_07.qgf.c
-SRC += ../icon/generated/layer_08.qgf.c
-SRC += ../icon/generated/layer_09.qgf.c
-SRC += ../icon/generated/layer_10.qgf.c
-SRC += ../icon/generated/layer_11.qgf.c
 SRC += ../icon/generated/000.qgf.c
 SRC += ../icon/generated/001.qgf.c
 SRC += ../icon/generated/002.qgf.c
@@ -147,7 +139,8 @@ SRC += ../common/touch_lcd_omni.c
 SRC += ../common/power_lcd.c
 SRC += ../common/status_view.c
 
-SRC += ../common/omni_bg_image.c
 SRC += ../common/omni_bg_hid.c
+SRC += ../common/omni_bg_image.c
+SRC += ../common/omni_icon_image.c
 
 LDFLAGS += -Wl,--wrap=dynamic_keymap_set_keycode

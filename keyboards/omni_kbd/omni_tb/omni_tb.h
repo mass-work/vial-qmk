@@ -7,7 +7,7 @@
 
 #define ENABLE_TOUCH_UPDATE   1 
 #define SLEEPING_KB_TIME      60000
-#define SLEEP_VIEW            1 // 1: code rain
+#define SLEEP_VIEW_SWITCH_TIME  30000 // 30 sec
 
 typedef enum {
     TRACKBALL_CURSOR = 0,

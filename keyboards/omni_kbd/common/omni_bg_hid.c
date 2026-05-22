@@ -13,7 +13,6 @@
 #define OMNI_BG_CMD_DRAW    0x44
 #define OMNI_BG_CMD_CLEAR   0x45
 
-// add
 #define OMNI_ICON_CMD_BEGIN   0x50
 #define OMNI_ICON_CMD_STATUS  0x51
 #define OMNI_ICON_CMD_CHUNK   0x52
@@ -32,7 +31,6 @@ static uint32_t read_u32_le(const uint8_t *p) {
 }
 
 static void write_status_response(uint8_t *data, bool ok) {
-    // data[0] はコマンドIDを残す
     data[1] = ok ? 0 : 1; // 0 = OK, 1 = NG
     data[2] = omni_bg_get_state();
     data[3] = omni_bg_get_error();
@@ -77,7 +75,6 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
             uint32_t offset = read_u32_le(&data[1]);
             uint8_t len = data[5];
 
-            // payloadは data[6] から。今回は安定版として最大24byte。
             bool ok = omni_bg_write_chunk(offset, &data[6], len);
             write_status_response(data, ok);
             return;
@@ -101,7 +98,6 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
             return;
         }
 
-        //add
         case OMNI_ICON_CMD_BEGIN: {
             uint8_t  slot  = data[1];
             uint32_t total = read_u32_le(&data[2]);
@@ -148,17 +144,6 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
 
             return;
         }
-
-        // case OMNI_ICON_CMD_RELOAD: {
-        //     uint8_t slot = data[1];
-
-        //     uprintf("[ICON HID] RELOAD slot=%u\n", slot);
-
-        //     data[1] = 0;     // OK
-        //     data[2] = slot;  // echo
-
-        //     return;
-        // }
 
         default:
             data[0] = id_unhandled;

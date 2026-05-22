@@ -26,10 +26,36 @@ static inline uint8_t clamp_1_100_x(int16_t x) {
     return (uint8_t)x;
 }
 
-void process_cursor_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale) {
-    if (!report.motion.b.is_lifted) {        
-        float x = (float)report.delta_x / cpi_scale;
-        float y = (float)report.delta_y / cpi_scale;
+void process_cursor_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation) {
+    if (!report.motion.b.is_lifted) {    
+        
+
+
+        float raw_x = (float)report.delta_x / cpi_scale;
+        float raw_y = (float)report.delta_y / cpi_scale;
+
+        float x, y;
+
+        switch (orientation) {
+            case 0:
+            default:
+                x = raw_x;
+                y = raw_y;
+                break;
+            case 1: // 90 deg
+                x =  raw_y;
+                y = -raw_x;
+                break;
+            case 2: // 180 deg
+                x = -raw_x;
+                y = -raw_y;
+                break;
+            case 3: // 270 deg
+                x = -raw_y;
+                y =  raw_x;
+                break;
+        }
+
         int sign_x = ((x > 0) - (x < 0)) * rx;
         int sign_y = ((y > 0) - (y < 0)) * ry;
         float x_corr = pow(fabs(x), speed_adjust) / pow(127, speed_adjust) * 127 / 100 * slope_factor * sign_x;
@@ -54,8 +80,8 @@ void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report
     if (!report.motion.b.is_lifted) {
         uint16_t corr_calc_rapport_max = 600;
 
-        float raw_x = report.delta_x * cpi_scale;
-        float raw_y = report.delta_y * cpi_scale;
+        float raw_x = (float)report.delta_x * cpi_scale;
+        float raw_y = (float)report.delta_y * cpi_scale;
         float x, y;
 
         switch (orientation) {

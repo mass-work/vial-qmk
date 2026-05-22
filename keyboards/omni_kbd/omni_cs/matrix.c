@@ -18,14 +18,12 @@
 static const pin_t row_pins[MATRIX_ROWS] = MATRIX_ROW_PINS;
 static const pin_t col_pins[MATRIX_COLS] = MATRIX_COL_PINS;
 
-// add
 #define TOUCH_MATRIX_HOLD_MS 20
 static bool     touch_matrix_active = false;
 static bool     touch_matrix_pressed = false;
 static uint8_t  touch_matrix_row = 0xFF;
 static uint8_t  touch_matrix_col = 0xFF;
 static uint16_t touch_matrix_timer = 0;
-// add fin
 
 
 static void select_row(uint8_t row)
@@ -193,8 +191,8 @@ bool get_touch_coordinates(uint8_t *row, uint8_t *col, uint16_t touch_x, uint16_
         *row = (uint8_t)current_lcd_layer + 6;
         *col = (uint8_t)touched_index;
 
-        uprintf("[TOUCH HIT] x=%u y=%u signal=%u layer=%u row=%u col=%u\n",
-                touch_x, touch_y, touch_signal, current_lcd_layer, *row, *col);
+        // uprintf("[TOUCH HIT] x=%u y=%u signal=%u layer=%u row=%u col=%u\n",
+        //         touch_x, touch_y, touch_signal, current_lcd_layer, *row, *col);
         return true;
     }
 
@@ -262,17 +260,15 @@ static void apply_touch_matrix(matrix_row_t current_matrix[]) {
 
     if (touch_matrix_pressed) {
         current_matrix[touch_matrix_row] |= (MATRIX_ROW_SHIFTER << touch_matrix_col);
-        // 暫定処理、PC側の1~2回目の入力遅延相当をあとでいれる
-        touch_signal_view_update = true;
     } else {
         current_matrix[touch_matrix_row] &= ~(MATRIX_ROW_SHIFTER << touch_matrix_col);
     }
 
-    uprintf("[TOUCH_APPLY] pressed=%u row=%u col=%u result=0x%04X\n",
-            touch_matrix_pressed,
-            touch_matrix_row,
-            touch_matrix_col,
-            current_matrix[touch_matrix_row]);
+    // uprintf("[TOUCH_APPLY] pressed=%u row=%u col=%u result=0x%04X\n",
+    //         touch_matrix_pressed,
+    //         touch_matrix_row,
+    //         touch_matrix_col,
+    //         current_matrix[touch_matrix_row]);
 
     if (!touch_matrix_pressed) {
         touch_matrix_active = false;
@@ -285,6 +281,7 @@ static void apply_touch_matrix(matrix_row_t current_matrix[]) {
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     matrix_row_t next_matrix[MATRIX_ROWS] = {0};
+    // uprintf("press %u\n", touch_matrix_pressed);
 
     for (uint8_t current_row = 0; current_row < MATRIX_ROWS / 2; current_row++) {
         read_cols_on_row(next_matrix, current_row);

@@ -13,6 +13,8 @@ uint8_t val_main_color = 255;
 uint8_t hue_sub_color = 255;
 uint8_t sat_sub_color = 0;
 uint8_t val_sub_color = 255;
+uint8_t sleep_view_state;
+uint8_t swipe_view_state;
 
 float speed_adjust1;
 int slope_factor1;
@@ -32,6 +34,8 @@ void save_omni_color_config(void) {
     dynamic_keymap_set_keycode(3,11,3, 0x7700 + hue_sub_color);
     dynamic_keymap_set_keycode(3,11,4, 0x7700 + sat_sub_color);
     dynamic_keymap_set_keycode(3,11,5, 0x7700 + val_sub_color);
+    dynamic_keymap_set_keycode(3,10,4, 0x7700 + sleep_view_state);
+    dynamic_keymap_set_keycode(3,10,5, 0x7700 + swipe_view_state); 
     keymap_change_update_flag = true;
 }
 
@@ -45,6 +49,8 @@ void load_omni_color_config(void) {
     hue_sub_color  = dynamic_keymap_get_keycode(3,11,3) - 0x7700;
     sat_sub_color  = dynamic_keymap_get_keycode(3,11,4) - 0x7700;
     val_sub_color  = dynamic_keymap_get_keycode(3,11,5) - 0x7700;
+    sleep_view_state  = dynamic_keymap_get_keycode(3,10,4) - 0x7700;
+    swipe_view_state  = dynamic_keymap_get_keycode(3,10,5) - 0x7700;
 }
 
 void save_omni_tb_config(void) {
