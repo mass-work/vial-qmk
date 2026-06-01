@@ -5,7 +5,9 @@
 #include "via.h"
 #include "omni_bg_image.h"
 #include "omni_icon_image.h"
-    
+
+#define OMNI_HID_ERROR_LOCKED 0x20
+
 #define OMNI_BG_CMD_BEGIN   0x40
 #define OMNI_BG_CMD_STATUS  0x41
 #define OMNI_BG_CMD_CHUNK   0x42
@@ -18,6 +20,53 @@
 #define OMNI_ICON_CMD_CHUNK   0x52
 #define OMNI_ICON_CMD_END     0x53
 #define OMNI_ICON_CMD_RELOAD  0x54
+
+
+static bool omni_hid_command_requires_unlock(uint8_t command) {
+    switch (command) {
+        case OMNI_BG_CMD_BEGIN:
+        case OMNI_BG_CMD_CHUNK:
+        case OMNI_BG_CMD_END:
+        case OMNI_BG_CMD_CLEAR:
+
+        case OMNI_ICON_CMD_BEGIN:
+        case OMNI_ICON_CMD_CHUNK:
+        case OMNI_ICON_CMD_END:
+        case OMNI_ICON_CMD_RELOAD:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+static bool omni_hid_is_icon_command(uint8_t command) {
+    return command >= OMNI_ICON_CMD_BEGIN && command <= OMNI_ICON_CMD_RELOAD;
+}
+
+static bool omni_hid_is_vial_unlocked(void) {
+#ifdef VIAL_ENABLE
+    return vial_unlocked;
+#else
+    return false;
+#endif
+}
+
+static void write_locked_response(uint8_t *data) {
+    data[1] = 1; // NG
+
+    if (omni_hid_is_icon_command(data[0])) {
+        data[2] = omni_icon_get_state();
+        data[3] = OMNI_HID_ERROR_LOCKED;
+        data[4] = omni_icon_get_progress_percent();
+    } else {
+        data[2] = omni_bg_get_state();
+        data[3] = OMNI_HID_ERROR_LOCKED;
+        data[4] = omni_bg_get_progress_percent();
+    }
+}
+
+
 
 static uint16_t read_u16_le(const uint8_t *p) {
     return ((uint16_t)p[0]) | ((uint16_t)p[1] << 8);
@@ -50,6 +99,11 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
         if (length > 0) {
             data[0] = id_unhandled;
         }
+        return;
+    }
+
+    if (omni_hid_command_requires_unlock(data[0]) && !omni_hid_is_vial_unlocked()) {
+        write_locked_response(data);
         return;
     }
 
