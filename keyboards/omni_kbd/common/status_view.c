@@ -12,10 +12,10 @@ uint8_t hi_res_interval_v = 100;
 uint8_t hi_res_value_v    = 100;
 uint8_t hi_res_interval_h = 100;
 uint8_t hi_res_value_h    = 100;
-int8_t ud_sc_mode_flag = 1;
-int8_t lr_sc_mode_flag = 1;
 uint16_t touch_repeat_interval = 70;
 uint16_t touch_single_interval = 400;
+bool is_tb_haptic = true;
+bool is_td_haptic = true;
 
 static inline uint8_t clamp_u8(int16_t v, uint8_t lo, uint8_t hi) {
     if (v < lo) v = lo;
@@ -82,13 +82,32 @@ typedef struct {
     const char *summary;
 } toggle_cfg_t;
 
+// #define IDX_HRV 0
+// #define IDX_HRH 1
+// #define IDX_HPT 2
+// #define IDX_AML 3
+// #define IDX_TOC 4
+
+// static const toggle_cfg_t toggles[] = {
+//     { "HRV", COL2_X, ROW1_Y, 2, "RES", "VAL", "Vertical hi-res scroll" },
+//     { "HRH", COL3_X, ROW1_Y, 2, "RES", "VAL", "Horizontal hi-res scroll" },
+//     { "HPT", COL4_X, ROW1_Y, 0, "---", "---", "Haptic feedback" },
+//     { "AML", COL2_X, ROW2_Y, 0, "---", "---", "Auto mouse layer" },
+//     { "TRP", COL3_X, ROW2_Y, 2, "HLD", "RPT", "Touch repeat interval" },
+// };
+
+#define IDX_AML 0
+#define IDX_HPB 1
+#define IDX_HPT 2
+#define IDX_TRP 3
+
 static const toggle_cfg_t toggles[] = {
-    { "HRV", COL2_X, ROW1_Y, 2, "RES", "VAL", "Vertical hi-res scroll" },
-    { "HRH", COL3_X, ROW1_Y, 2, "RES", "VAL", "Horizontal hi-res scroll" },
-    { "SCI", COL4_X, ROW1_Y, 0, "---", "---", "Invert scroll" },
-    { "AML", COL2_X, ROW2_Y, 0, "---", "---", "Auto mouse layer" },
-    { "TRP", COL3_X, ROW2_Y, 2, "HLD", "RPT", "Touch repeat interval" },
+    { "AML", COL2_X, ROW1_Y, 0, "---", "---", "Auto mouse layer" },
+    { "HPB", COL3_X, ROW1_Y, 0, "---", "---", "Haptic feedback Track Ball" },
+    { "HPT", COL4_X, ROW1_Y, 0, "---", "---", "Haptic feedback Touch Display" },
+    { "TRP", COL2_X, ROW2_Y, 2, "HLD", "RPT", "Touch repeat interval"  },
 };
+
 
 #define NUM_TOG (sizeof(toggles)/sizeof(toggles[0]))
 
@@ -97,12 +116,6 @@ static uint8_t os_bar_upper[PROF_COUNT][NUM_TOG];
 static uint8_t os_bar_lower[PROF_COUNT][NUM_TOG];
 static int8_t  sel_idx = -1;
 
-#define IDX_HRV 0
-#define IDX_HRH 1
-#define IDX_SCD 2
-#define IDX_AML 3
-#define IDX_TOC 4
-
 static uint8_t g_default_layer = _BASE;
 static inline bool is_sub_layer(void) { return g_default_layer == _SUB; }
 
@@ -110,66 +123,56 @@ static inline prof_index_t current_profile_index(void) {
     return is_sub_layer() ? PROF_SUB : PROF_BASE;
 }
 
-bool sv_hrv_enabled_current(void) {
-    return os_tog_state[current_profile_index()][IDX_HRV] != 0;
-}
+// bool sv_hrv_enabled_current(void) {
+//     return os_tog_state[current_profile_index()][IDX_HRV] != 0;
+// }
 
-bool sv_hrh_enabled_current(void) {
-    return os_tog_state[current_profile_index()][IDX_HRH] != 0;
-}
+// bool sv_hrh_enabled_current(void) {
+//     return os_tog_state[current_profile_index()][IDX_HRH] != 0;
+// }
 
 static inline void apply_to_param(uint8_t toggle_idx, bool is_upper_bar, uint8_t bar_x) {
 
     switch (toggle_idx) {
-        case IDX_HRV:
-            if (is_upper_bar) {
-                if (sv_hrv_enabled_current()) {
-                    hi_res_interval_v = clamp_0_100_x(bar_x);
-                } else {
-                    hi_res_interval_v = 100;
-                }
-            } else {
-                if (sv_hrv_enabled_current()) {
-                    hi_res_value_v = clamp_0_100_x(bar_x); //hi-res off
-                } else {
-                    if (g_default_layer == 0) {
-                        hi_res_value_v = 1; // win
-                    } else if (g_default_layer == 1) {
-                        hi_res_value_v = 100; // mac
-                    }
-                }
-            }
-            break;
+        // case IDX_HRV:
+        //     if (is_upper_bar) {
+        //         if (sv_hrv_enabled_current()) {
+        //             hi_res_interval_v = clamp_0_100_x(bar_x);
+        //         } else {
+        //             hi_res_interval_v = 100;
+        //         }
+        //     } else {
+        //         if (sv_hrv_enabled_current()) {
+        //             hi_res_value_v = clamp_0_100_x(bar_x); //hi-res off
+        //         } else {
+        //             if (g_default_layer == 0) {
+        //                 hi_res_value_v = 1; // win
+        //             } else if (g_default_layer == 1) {
+        //                 hi_res_value_v = 100; // mac
+        //             }
+        //         }
+        //     }
+        //     break;
 
-        case IDX_HRH:
-            if (is_upper_bar) {
-                if (sv_hrh_enabled_current()) {
-                    hi_res_interval_h = clamp_0_100_x(bar_x);
-                } else {
-                    hi_res_interval_h = 100;
-                }
-            } else {
-                if (sv_hrh_enabled_current()) {
-                    hi_res_value_h    = clamp_0_100_x(bar_x);
-                } else {
-                    if (g_default_layer == 0) {
-                        hi_res_value_h = 1; // win
-                    } else if (g_default_layer == 1) {
-                        hi_res_value_h = 100; // mac
-                    }
-                }
-            }
-            break;
-
-        case IDX_SCD:
-            if (os_tog_state[current_profile_index()][IDX_SCD]) {
-                ud_sc_mode_flag = -1;
-                lr_sc_mode_flag = -1;
-            } else {
-                ud_sc_mode_flag = 1;
-                lr_sc_mode_flag = 1;
-            }
-            break;
+        // case IDX_HRH:
+        //     if (is_upper_bar) {
+        //         if (sv_hrh_enabled_current()) {
+        //             hi_res_interval_h = clamp_0_100_x(bar_x);
+        //         } else {
+        //             hi_res_interval_h = 100;
+        //         }
+        //     } else {
+        //         if (sv_hrh_enabled_current()) {
+        //             hi_res_value_h    = clamp_0_100_x(bar_x);
+        //         } else {
+        //             if (g_default_layer == 0) {
+        //                 hi_res_value_h = 1; // win
+        //             } else if (g_default_layer == 1) {
+        //                 hi_res_value_h = 100; // mac
+        //             }
+        //         }
+        //     }
+        //     break;
 
         case IDX_AML:
             if (os_tog_state[current_profile_index()][IDX_AML]) {
@@ -178,7 +181,27 @@ static inline void apply_to_param(uint8_t toggle_idx, bool is_upper_bar, uint8_t
                 set_auto_mouse_enable(false);
             }
             break;
-        case IDX_TOC:
+
+        case IDX_HPB:
+            if (os_tog_state[current_profile_index()][IDX_HPB]) {
+                is_tb_haptic = true;
+
+            } else {
+                is_tb_haptic = false;
+            }
+            break;
+
+        case IDX_HPT:
+            if (os_tog_state[current_profile_index()][IDX_HPT]) {
+                is_td_haptic = true;
+
+            } else {
+                is_td_haptic = false;
+            }
+            break;
+
+
+        case IDX_TRP:
             if (is_upper_bar) {
                 touch_single_interval = 150 + (bar_x * (1500 - 150) / 100);
             } else {

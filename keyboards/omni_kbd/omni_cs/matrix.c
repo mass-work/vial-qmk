@@ -6,11 +6,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include "util.h"
+#include "haptic.h"
 #include "matrix.h"
 #include "debounce.h"
 #include "atomic_util.h"
 #include "omni_cs.h"
 #include "../common/touch_lcd_omni.h"
+#include "../common/status_view.h"
 #include <math.h>
 #include "config.h"
 #include "timer.h"
@@ -234,12 +236,21 @@ bool read_touch(matrix_row_t current_matrix[], bool touch_pressed) {
 extern matrix_row_t matrix[MATRIX_ROWS];
 
 static bool last_matrix_state = false;
+static bool touch_circle_pressed = false;
 
 static void update_touch_matrix_state(void) {
     uint8_t row = 0xFF;
     uint8_t col = 0xFF;
 
     if (touch_signal && get_touch_coordinates(&row, &col, touch_x, touch_y)) {
+        if (!touch_circle_pressed){
+            // #ifdef HAPTIC_ENABLE
+            if (is_td_haptic){
+                haptic_play();
+            }
+            // #endif
+        }
+        touch_circle_pressed = true;
         touch_matrix_row = row;
         touch_matrix_col = col;
         touch_matrix_active = true;
@@ -249,7 +260,13 @@ static void update_touch_matrix_state(void) {
     }
 
     if (touch_matrix_pressed && timer_elapsed(touch_matrix_timer) > TOUCH_MATRIX_HOLD_MS) {
+        touch_circle_pressed = false;
         touch_matrix_pressed = false;
+        // #ifdef HAPTIC_ENABLE
+        if (is_td_haptic){
+            haptic_play();
+        }
+        // #endif
     }
 }
 
@@ -316,8 +333,6 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     last_matrix_state = changed;
     return changed;
 }
-
-
 
 bool get_last_matrix_state(void) {
     return last_matrix_state;

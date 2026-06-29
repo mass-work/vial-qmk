@@ -49,10 +49,13 @@ extern uint8_t hi_res_interval_v;
 extern uint8_t hi_res_value_v;
 extern uint8_t hi_res_interval_h;
 extern uint8_t hi_res_value_h;
-extern int8_t ud_sc_mode_flag;
-extern int8_t lr_sc_mode_flag;
+// extern int8_t ud_sc_mode_flag;
+// extern int8_t lr_sc_mode_flag;
 extern uint16_t touch_repeat_interval;
 extern uint16_t touch_single_interval;
+
+extern bool is_tb_haptic;
+extern bool is_td_haptic;
 
 bool sv_hrv_enabled_current(void);
 bool sv_hrh_enabled_current(void);

@@ -52,6 +52,7 @@ uint16_t import_keymaps[MATRIX_ROWS / 2][MATRIX_COLS];
 static uint16_t blink_start_time = 0;
 static bool is_backlight_off = false;
 bool lcd_is_on = true;
+static uint16_t display_angle = 0;
 
 #define TOUCH_DRAW_LAYER      0
 #define TOUCH_DRAW_ROW_START  10
@@ -103,7 +104,7 @@ void load_virtual_keys(void) {
 }
 
 void update_lcd_view_data(void){
-    load_virtual_keys(); // add
+    load_virtual_keys();
     draw_background_all_black();
     initialize_lcd_layer_app_images();
     draw_lcd_layer_category_images();
@@ -117,6 +118,12 @@ void omni_icon_on_changed(uint8_t slot) {
     if (display_mode == DISPLAY_MODE_TOUCH_KEY) {
         update_lcd_view_data();
     }
+}
+
+bool get_haptic_enabled_key(uint16_t keycode, keyrecord_t *record) {
+    (void)keycode;
+    (void)record;
+    return false;
 }
 
 void pointing_device_init_kb(void) {
@@ -192,8 +199,8 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     }
     pre_layer = current_layer;
 
-    pmw33xx_report_t report0 = pmw33xx_read_burst(0); // Sensor #1
-    pmw33xx_report_t report1 = pmw33xx_read_burst(1); // Sensor #2
+    pmw33xx_report_t report0 = pmw33xx_read_burst(0);
+    pmw33xx_report_t report1 = pmw33xx_read_burst(1);
 
     if (report0.motion.b.is_motion || report1.motion.b.is_motion) {
         tb_state = true;
@@ -204,13 +211,13 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     tb_gesture_config_update_if_needed();
 
     if (tb_main_gesture_is_enabled()) {
-        process_tb_gesture_report( &mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0, is_haptic, tb_main_tap_keypos());
+        process_tb_gesture_report( &mouse_report, report0, speed_adjust2, slope_factor2, 1, -1, 3, ORIENT_0, tb_main_tap_keypos());
     } else {
         process_cursor_report( &mouse_report, report0, speed_adjust1, slope_factor1, -1, 1, 2, ORIENT_0);
     }
 
     if (tb_sub_gesture_is_enabled()) {
-        process_tb_gesture_report( &mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0, is_haptic, tb_sub_tap_keypos());
+        process_tb_gesture_report( &mouse_report, report1, speed_adjust2, slope_factor2, -1, 1, 3, ORIENT_0, tb_sub_tap_keypos());
     } else {
         process_cursor_report( &mouse_report, report1, speed_adjust1, slope_factor1, 1, -1, 2, ORIENT_0);
     }
@@ -231,7 +238,7 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     }
     if (!is_first_frame) {
         if (is_second_frame) {
-            display_redraw();
+            display_redraw(display_angle);
             qp_flush(display);
             is_second_frame = false;
         }
@@ -253,7 +260,11 @@ void sleeping_kb(bool matrix_changed) {
             if (!lcd_is_on){
                 lcd_is_on = power_on_lcd();
             }
-            display_redraw();
+            // if (swipe_view_state == 1) {
+            //     omni_bg_draw_now();
+            // } else {
+                display_redraw(display_angle);
+            // }
             sleeping_state = false;
         }
     }
@@ -346,18 +357,15 @@ void draw_test(void) {
             break;
 
         case 1:
-            // draw_background_all_black();
             omni_bg_draw_now();
             break;
 
         case 2:            
-            // draw_background_all_black();
             draw_lcd_layer_category_images();
-            display_redraw();
+            display_redraw(display_angle);
             break;
 
         case 3:
-            // draw_background_all_black();
             omni_bg_draw_now();
             break;
     }
@@ -391,14 +399,11 @@ void housekeeping_task_user(void) {
             gesture_id = GESTURE_NONE;
         }   
     }
-    // draw_test();
     tb_tap_pending_task();
     omni_icon_task();
     omni_bg_task();
 }
 
-#include "haptic.h"
-bool is_haptic = true;
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!record->event.pressed) {
         tb_mode_l = TRACKBALL_TAP;
@@ -503,7 +508,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             if (swipe_view_state == 1) {
                 omni_bg_draw_now();
             } else {
-                display_redraw();
+                display_redraw(display_angle);
             }
             break;
         case KC_DP_KEY_MAT:
@@ -540,7 +545,7 @@ void __wrap_dynamic_keymap_set_keycode(uint8_t layer, uint8_t row, uint8_t col, 
         load_omni_color_config();
         persist_load_all();
         display_mode = DISPLAY_MODE_TOUCH_KEY;
-        display_redraw();
+        display_redraw(display_angle);
     }
     tb_gesture_config_force_update();
 }

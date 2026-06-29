@@ -55,11 +55,11 @@ painter_image_handle_t* get_img_func_for_slot(uint16_t keycode, uint8_t slot); /
 painter_image_handle_t* get_layer_img_func(uint16_t layer_count);
 painter_image_handle_t* get_center_img_func_for_slot(uint16_t keycode, uint8_t slot, uint8_t page);
 
-void display_redraw(void);
+void display_redraw(uint16_t angle);
 void draw_background_all(void);
 void draw_background_all_black(void);
 void draw_lcd_layer_category_images(void);
 void process_touch_interrupt(void);
 void show_trackball_tuning_mode(void);
-void swipe_gesture_swipe_omni_logo(void);
+void swipe_gesture_swipe_omni_logo(uint16_t angle);
 

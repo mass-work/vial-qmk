@@ -12,11 +12,6 @@ OS_DETECTION_ENABLE = yes
 SRC += matrix.c
 
 POINTING_DEVICE_ENABLE = yes
-
-#add
-# POINTING_DEVICE_HIRES_SCROLL_ENABLE = yes
-# WHEEL_EXTENDED_REPORT            = yes
-
 POINTING_DEVICE_DRIVER = custom
 SRC += ../drivers/pmw3360.c
 SRC += ../drivers/pmw33xx_common.c

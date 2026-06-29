@@ -9,6 +9,7 @@
 #include "draw_custom.h"
 #include "view_keymap.h"
 #include "status_view.h"
+#include "omni_bg_image.h"
 #include "dynamic_keymap.h"
 #include "../drivers/cst816t.h"
 #include "../icon/omni_image_loader.h"
@@ -33,7 +34,7 @@ uint16_t touch_x = 0xFFFF;
 uint16_t touch_y = 0xFFFF;
 uint16_t touch_start_timer = 0;
 bool touch_signal = false;
-bool touch_start_flag = false; 
+bool touch_start_flag = false;
 bool initial_touch_flag = false;
 bool touch_signal_view_update = false;
 uint8_t gesture_id = GESTURE_NONE;
@@ -68,8 +69,8 @@ static uint8_t x_pos_save = TOUCH_LCD_WIDTH / 2;
 static uint8_t y_pos_save = TOUCH_LCD_HEIGHT / 2 + 90;
 static int16_t text1_width, text3_width, text4_width, text5_width, text6_width = 0;
 static const char *text1 = "TB TUNE";
-static const char *text3 = "Right";
-static const char *text4 = "Left";
+static const char *text3 = "Main";
+static const char *text4 = "Sub";
 static const char *text5 = "+      +";
 static const char *text6 = "-      -";
 static uint8_t  buf[WINDOW_SLOTS];
@@ -195,15 +196,15 @@ void draw_lcd_layer_category_images(void) {
     qp_flush(display);
 }
     
-void swipe_gesture_swipe_omni_logo(void) {
+void swipe_gesture_swipe_omni_logo(uint16_t angle) {
     uint8_t case_depth = 160;
     uint8_t case_width = case_depth * 0.79f;
-    float case_angle = 30.0f;
-    float sball_angle = case_angle + 193.0f; //194
+    float case_angle = 120.0f + (float)angle;
+    float sball_angle = case_angle + 193.0f;
     uint8_t ball_size = case_depth * 0.25f;
     uint8_t ball_spase = ball_size * 0.93f;
     float ball_position_mr = case_depth * 0.23f;
-    float ball_position_sr = case_depth * 0.21f; //0.215
+    float ball_position_sr = case_depth * 0.21f;
     float rad_m = case_angle * (float)M_PI / 180.0f;
     float rad_s = sball_angle * (float)M_PI / 180.0f;
     uint8_t ball_position_mx = (uint8_t)lroundf(120.0f - ball_position_mr * sinf(rad_m));
@@ -220,7 +221,12 @@ void swipe_gesture_swipe_omni_logo(void) {
     qp_triangle_rotated(display, 218, 120, 20, 17, 270.0f, hue_main_color, sat_main_color, val_main_color, true, 1);
     qp_circle(display, ball_position_sx, ball_position_sy, 8, hue_bg, sat_bg, val_bg, true);
     qp_circle(display, ball_position_sx, ball_position_sy, 6, hue_sub_color, sat_sub_color, val_sub_color, true);
-    qp_draw_mni_rotated_solid(display, 160, 118, 270.0f, 1.4f, hue_bg, sat_bg, val_bg);
+    uint8_t mni_x = 2;
+    uint8_t mni_y = 40;
+    float rad_mni = angle * (float)M_PI / 180.0f;
+    uint8_t rot_mni_x = (float)mni_x * cosf(rad_mni) - (float)mni_y * sinf(rad_mni);
+    uint8_t rot_mni_y = (float)mni_x * sinf(rad_mni) + (float)mni_y * cosf(rad_mni);
+    qp_draw_mni_rotated_solid(display, 120 + rot_mni_x, 120 + rot_mni_y, (float)angle, 1.4f, hue_bg, sat_bg, val_bg);
     qp_flush(display);
 }
 
@@ -438,12 +444,15 @@ void process_touch_interrupt(void) {
             cst816t_XY touch_data = cst816t_Get_Point();
             pre_touch_x = touch_data.x_point;
             pre_touch_y = touch_data.y_point;
+            touch_start_flag = true; 
 
             fast_touch_time = timer_read();
             touch_state = TOUCH_STATE_START;
             uprintf("------START------\n");
+
         } else if (touch_state == TOUCH_STATE_START) {
             if (timer_elapsed(fast_touch_time) > touch_repeat_interval) {
+                touch_start_flag = false; 
                 cst816t_XY touch_data = cst816t_Get_Point();
                 now_touch_x = touch_data.x_point;
                 now_touch_y = touch_data.y_point;
@@ -503,10 +512,11 @@ void process_touch_interrupt(void) {
                 // uprintf("-----REPEAT------\n");
             }
         }
-            
+
     } else {
         if (timer_elapsed(fast_touch_time) > touch_repeat_interval + 30) {
             if (touch_state != TOUCH_STATE_NONE) {
+
                 if (touch_mode == TOUCH_MODE_PRESS && touch_state == TOUCH_STATE_REPEAT) {
                     touch_signal_view_update = true;
                 }
@@ -550,7 +560,7 @@ void show_trackball_tuning_mode(void) {
     qp_flush(display);
 }
 
-void display_redraw(void) {
+void display_redraw(uint16_t angle) {
     switch (display_mode) {
         case DISPLAY_MODE_TOUCH_KEY:
             draw_background_all_black();
@@ -560,8 +570,11 @@ void display_redraw(void) {
             show_trackball_tuning_mode();
             break;
         case DISPLAY_MODE_SWIPE_GESTURE:
-            swipe_gesture_swipe_omni_logo();
-
+            if (swipe_view_state == 1) {
+                omni_bg_draw_now();
+            } else {
+                swipe_gesture_swipe_omni_logo(angle);
+            }
             break;
         case DISPLAY_MODE_KEY_MATRIX:
             draw_key_matrix(display, roboto_mono16, st2_mono16, current_layer);

@@ -6,7 +6,6 @@
 #include <print.h>
 #include "haptic.h"
 #include "dynamic_keymap.h"
-
 #include "trackball_omni.h"
 #include "timer.h"
 #include "config_omni.h"
@@ -20,6 +19,9 @@ static float accumulated_y = 0.0f;
 static float accumulated_h = 0.0f;
 static float accumulated_v = 0.0f;
 
+#define HAPTIC_COOLDOWN_MS 40
+static uint32_t last_haptic_time = 0;
+
 static inline uint8_t clamp_1_100_x(int16_t x) {
     if (x < 1) x = 1;
     if (x > 100) x = 100;
@@ -29,8 +31,6 @@ static inline uint8_t clamp_1_100_x(int16_t x) {
 void process_cursor_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation) {
     if (!report.motion.b.is_lifted) {    
         
-
-
         float raw_x = (float)report.delta_x / cpi_scale;
         float raw_y = (float)report.delta_y / cpi_scale;
 
@@ -74,8 +74,8 @@ void process_cursor_report(report_mouse_t *mouse_report, pmw33xx_report_t report
     }
 }
 
-void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic, const keypos_t keypos[]) {
-    (void)is_haptic;
+void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, const keypos_t keypos[]) {
+    // (void)is_haptic;
     (void)keypos;
     if (!report.motion.b.is_lifted) {
         uint16_t corr_calc_rapport_max = 600;
@@ -104,8 +104,11 @@ void process_high_res_scroll_report(report_mouse_t *mouse_report, pmw33xx_report
                 break;
         }
 
-        int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
-        int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
+        int sign_x = ((x > 0) - (x < 0)) * rx;
+        int sign_y = ((y > 0) - (y < 0)) * ry;
+        // int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
+        // int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
+
         float x_corr = pow(fabs(x), speed_adjust) / pow(corr_calc_rapport_max, speed_adjust) * corr_calc_rapport_max / 100 * slope_factor * sign_x;
         float y_corr = pow(fabs(y), speed_adjust) / pow(corr_calc_rapport_max, speed_adjust) * corr_calc_rapport_max / 100 * slope_factor * sign_y;
 
@@ -330,7 +333,7 @@ void tb_tap_pending_task(void) {
     }
 }
 
-void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, bool is_haptic, const keypos_t keypos[]) {
+void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, float speed_adjust, uint8_t slope_factor, int rx, int ry, uint8_t cpi_scale, uint8_t orientation, const keypos_t keypos[]) {
     if (!report.motion.b.is_lifted) {
 
         float raw_x = (float)report.delta_x / cpi_scale;
@@ -362,8 +365,10 @@ void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, f
                 break;
         }
 
-        int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
-        int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
+        int sign_x = ((x > 0) - (x < 0)) * rx;
+        int sign_y = ((y > 0) - (y < 0)) * ry;
+        // int sign_x = ((x > 0) - (x < 0)) * rx * lr_sc_mode_flag;
+        // int sign_y = ((y > 0) - (y < 0)) * ry * ud_sc_mode_flag;
 
         float x_corr = powf(fabsf(x), speed_adjust) / powf(127.0f, speed_adjust) * 127.0f / 100.0f * slope_factor * sign_x;
         float y_corr = powf(fabsf(y), speed_adjust) / powf(127.0f, speed_adjust) * 127.0f / 100.0f * slope_factor * sign_y;
@@ -427,13 +432,16 @@ void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, f
         }
 
 
-#ifdef HAPTIC_ENABLE
+// #ifdef HAPTIC_ENABLE
     #ifndef POINTING_DEVICE_HIRES_SCROLL_ENABLE
-    if (did_scroll && is_haptic) {
-        haptic_play();
+    if (did_scroll && is_tb_haptic) {
+        if (timer_elapsed32(last_haptic_time) >= HAPTIC_COOLDOWN_MS) {
+            haptic_play();
+            last_haptic_time = timer_read32();
+        }
     }
     #endif
 
-#endif
+// #endif
     }
 }
