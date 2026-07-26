@@ -208,7 +208,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
     [_CUSTOM] = LAYOUT(
         _______,   _______,  _______,  _______,  _______,   _______,                               _______, KC_DP_TB_TUNE, KC_DP_SWIPE_GESTURE, KC_DP_KEY_MAT, KC_DP_STAT1, _______,
-        _______, KC_DP_TOUCH_KEY0, KC_DP_TOUCH_KEY1, KC_DP_TOUCH_KEY2, KC_DP_TOUCH_KEY3, _______,  _______, KC_BTN1, KC_BTN3, KC_BTN2, TB_R_MODE_TOGGLE, _______,
+        _______, KC_DP_TOUCH_KEY0, KC_DP_TOUCH_KEY1, KC_DP_TOUCH_KEY2, KC_DP_TOUCH_KEY3, _______,  _______, KC_BTN1, KC_BTN3, KC_BTN2, _______, _______,
         _______,   _______,  _______,  _______,  _______,   _______,                               _______, _______, _______, _______, _______, _______,
         _______,   _______,  _______,  _______,  _______,   _______,                               _______, _______, _______, _______, _______,
         _______,

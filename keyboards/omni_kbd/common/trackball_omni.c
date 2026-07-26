@@ -394,7 +394,7 @@ void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, f
             tap_cycle_h = (tap_cycle_h > TB_TAP_REQUEST_MAX) ? TB_TAP_REQUEST_MAX : tap_cycle_h;
 
             uint8_t request_count = tap_cycle_h;
-            uprintf("[TP Cycle] raw_dy=%d \n", request_count);
+            // uprintf("[TP Cycle] raw_dy=%d \n", request_count);
 
             if (accumulated_h > 0) {
                 tb_request_tap_count(keypos, TB_TAP_LEFT, request_count);
@@ -415,7 +415,7 @@ void process_tap_report(report_mouse_t *mouse_report, pmw33xx_report_t report, f
             tap_cycle_v = (tap_cycle_v > TB_TAP_REQUEST_MAX) ? TB_TAP_REQUEST_MAX : tap_cycle_v;
 
             uint8_t request_count = tap_cycle_v;
-            uprintf("[TP Cycle] raw_dy=%d \n", request_count);
+            // uprintf("[TP Cycle] raw_dy=%d \n", request_count);
 
             if (accumulated_v > 0) {
                 tb_request_tap_count(keypos, TB_TAP_UP, request_count);

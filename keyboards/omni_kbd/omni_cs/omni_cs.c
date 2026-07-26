@@ -33,8 +33,6 @@
 
 bool matrix_changed = false;
 static bool tb_state = false;
-trackball_mode_t tb_mode_r = TRACKBALL_CURSOR;
-trackball_mode_t tb_mode_l = TRACKBALL_TAP;
 bool is_first_frame = true;  
 bool is_second_frame = true;  
 static deferred_token my_anim;
@@ -406,8 +404,6 @@ void housekeeping_task_user(void) {
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!record->event.pressed) {
-        tb_mode_l = TRACKBALL_TAP;
-        tb_mode_r = TRACKBALL_CURSOR;
         return true;
     }
     switch (keycode) {
@@ -465,16 +461,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case KC_val_sub_color_DOWN:
             val_sub_color = (val_sub_color > 16) ? val_sub_color - 16 : 0;
             break;
-        case TB_R_MODE_TOGGLE:
-            if (record->event.pressed) {
-                tb_mode_r = TRACKBALL_TAP;
-            } else {
-                tb_mode_r = TRACKBALL_CURSOR;
-            }
-            return false;
-        case TB_L_MODE_TOGGLE:
-            tb_mode_l = TRACKBALL_CURSOR;
-            return false;
         case KC_DP_TOUCH_KEY0:
             display_mode =  DISPLAY_MODE_TOUCH_KEY;
             current_lcd_layer = 0;

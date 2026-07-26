@@ -47,8 +47,6 @@ painter_image_handle_t image_000, image_001, image_002, image_003, image_004, im
 uint8_t touch_data[6];
 ImagePosition images[7];
 static uint16_t last_tap_time = 0;
-static bool prev_pin = 1;
-static uint16_t fall_time = 0;
 float pre_speed_adjust1;
 int pre_slope_factor1;
 float pre_speed_adjust2;
@@ -306,20 +304,27 @@ void process_touch(void) {
     touch_signal = true;
 }
 
-void measure_pulse(uint8_t interrupt_pin) {
-    bool curr_pin = interrupt_pin;
-    if (prev_pin && !curr_pin) {
-        uint16_t now = timer_read();
-        uint16_t period = (fall_time) ? timer_elapsed(fall_time) : 0;
-        fall_time = now;
-        uprintf("period = %u ms\n", period);
-    }
-    if (!prev_pin && curr_pin) {
-        uint16_t width = timer_elapsed(fall_time);
-        uprintf("width  = %u ms\n", width);
-    }
-    prev_pin = curr_pin;
-}
+
+// INT pin pulse measurement for touch-controller debugging.
+// Re-enable when investigating interrupt timing.
+
+// static bool prev_pin = 1;
+// static uint16_t fall_time = 0;
+
+// void measure_pulse(uint8_t interrupt_pin) {
+//     bool curr_pin = interrupt_pin;
+//     if (prev_pin && !curr_pin) {
+//         uint16_t now = timer_read();
+//         uint16_t period = (fall_time) ? timer_elapsed(fall_time) : 0;
+//         fall_time = now;
+//         uprintf("period = %u ms\n", period);
+//     }
+//     if (!prev_pin && curr_pin) {
+//         uint16_t width = timer_elapsed(fall_time);
+//         uprintf("width  = %u ms\n", width);
+//     }
+//     prev_pin = curr_pin;
+// }
 
 static inline void touch_irq_init(void) {
     setPinInputHigh(INT_PIN);
@@ -354,7 +359,7 @@ void touch_buf_tick(void) {
             if (count_low >= 1) {
                 T.in_contact = true;
                 off_hold_t0 = 0;
-                uprintf("[TOUCH] DOWN (count=%u)\n", count_low);
+                // uprintf("[TOUCH] DOWN (count=%u)\n", count_low);
             }
         } else {
             if (count_low == 0) {
@@ -363,7 +368,7 @@ void touch_buf_tick(void) {
                 } else if (timer_elapsed(off_hold_t0) >= contact_off_hold_ms) {
                     T.in_contact = false;
                     off_hold_t0 = 0;
-                    uprintf("[TOUCH] UP   (count=%u)\n", count_low);
+                    // uprintf("[TOUCH] UP   (count=%u)\n", count_low);
                 }
             } else {
                 off_hold_t0 = 0;
@@ -448,7 +453,7 @@ void process_touch_interrupt(void) {
 
             fast_touch_time = timer_read();
             touch_state = TOUCH_STATE_START;
-            uprintf("------START------\n");
+            // uprintf("------START------\n");
 
         } else if (touch_state == TOUCH_STATE_START) {
             if (timer_elapsed(fast_touch_time) > touch_repeat_interval) {
@@ -462,7 +467,7 @@ void process_touch_interrupt(void) {
                 ax = abs(x);
                 ay = abs(y);
                 r_approx = ax + ay - (ax > ay ? ax : ay) / 2;
-                uprintf("crood: %d %d %ld\n", x, y, r_approx);
+                // uprintf("crood: %d %d %ld\n", x, y, r_approx);
                 touch_mode_detected(x, y);
                 swipe_gesture_id_detected(x, y);
 
@@ -470,11 +475,11 @@ void process_touch_interrupt(void) {
                     touch_signal_view_update = true;
                     touch_state = TOUCH_STATE_REPEAT;
                     touch_repeat_time = timer_read() - touch_repeat_interval;
-                    uprintf("-----PRESS -> REPEAT------\n");
+                    // uprintf("-----PRESS -> REPEAT------\n");
                 } else {
                     process_gesture();
                     touch_state = TOUCH_STATE_SINGLE;
-                    uprintf("-----SINGLE------\n");
+                    // uprintf("-----SINGLE------\n");
                 }
             }
 

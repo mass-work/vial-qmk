@@ -9,11 +9,6 @@
 #define SLEEPING_KB_TIME      60000
 #define SLEEP_VIEW_SWITCH_TIME  30000
 
-typedef enum {
-    TRACKBALL_CURSOR = 0,
-    TRACKBALL_TAP    = 1,
-} trackball_mode_t;
-
 enum custom_keycodes {
     KC_hue_bg_UP = QK_KB_0,
     KC_hue_bg_DOWN,
@@ -33,8 +28,6 @@ enum custom_keycodes {
     KC_sat_sub_color_DOWN,
     KC_val_sub_color_UP,
     KC_val_sub_color_DOWN,
-    TB_R_MODE_TOGGLE,
-    TB_L_MODE_TOGGLE,
     KC_DP_MODE_CYCLE,
 };
 

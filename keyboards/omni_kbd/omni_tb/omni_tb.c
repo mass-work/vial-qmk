@@ -33,8 +33,6 @@
 
 bool matrix_changed = false;
 static bool tb_state = false;
-trackball_mode_t tb_mode_r = TRACKBALL_CURSOR;
-trackball_mode_t tb_mode_l = TRACKBALL_TAP;
 bool is_first_frame = true;  
 bool is_second_frame = true;  
 static deferred_token my_anim;
@@ -104,7 +102,7 @@ void load_virtual_keys(void) {
 }
 
 void update_lcd_view_data(void){
-    load_virtual_keys(); // add
+    load_virtual_keys();
     draw_background_all_black();
     initialize_lcd_layer_app_images();
     draw_lcd_layer_category_images();
@@ -216,8 +214,8 @@ if (display_mode ==  DISPLAY_MODE_KEY_MATRIX) {
     }
     pre_layer = current_layer;
 
-    pmw33xx_report_t report0 = pmw33xx_read_burst(0); // Sensor #1
-    pmw33xx_report_t report1 = pmw33xx_read_burst(1); // Sensor #2
+    pmw33xx_report_t report0 = pmw33xx_read_burst(0);
+    pmw33xx_report_t report1 = pmw33xx_read_burst(1);
 
     if (report0.motion.b.is_motion || report1.motion.b.is_motion) {
         tb_state = true;
@@ -277,11 +275,7 @@ void sleeping_kb(bool matrix_changed) {
             if (!lcd_is_on){
                 lcd_is_on = power_on_lcd();
             }
-            // if (swipe_view_state == 1) {
-            //     omni_bg_draw_now();
-            // } else {
-                display_redraw(display_angle);
-            // }
+            display_redraw(display_angle);
             sleeping_state = false;
         }
     }
@@ -461,8 +455,6 @@ static void apply_display_mode(uint8_t mode) {
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!record->event.pressed) {
-        tb_mode_l = TRACKBALL_TAP;
-        tb_mode_r = TRACKBALL_CURSOR;
         return true;
     }
     switch (keycode) {
@@ -482,7 +474,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             val_bg = (val_bg + 16 <= 254) ? val_bg + 16 : 254;
             break;
         case KC_val_bg_DOWN:
-            val_bg = (val_bg > 16) ? val_bg - 16 : 0;
+            val_bg = (val_bg > 16) ? val_bg - 16 : 0;eriod
             break;
         case KC_hue_main_color_UP:
             hue_main_color = (hue_main_color + 16) % 256;
@@ -520,16 +512,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case KC_val_sub_color_DOWN:
             val_sub_color = (val_sub_color > 16) ? val_sub_color - 16 : 0;
             break;
-        case TB_R_MODE_TOGGLE:
-            if (record->event.pressed) {
-                tb_mode_r = TRACKBALL_TAP;
-            } else {
-                tb_mode_r = TRACKBALL_CURSOR;
-            }
-            return false;
-        case TB_L_MODE_TOGGLE:
-            tb_mode_l = TRACKBALL_CURSOR;
-            return false;
         case KC_DP_MODE_CYCLE: {
             display_mode_index++;
             if (display_mode_index >= (sizeof(display_mode_order) / sizeof(display_mode_order[0]))) {

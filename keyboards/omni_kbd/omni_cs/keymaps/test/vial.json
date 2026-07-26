@@ -23,10 +23,6 @@
   { "name": "S Sub DW", "title": "Decrease sub color saturation", "shortName": "SubS-" },
   { "name": "V Sub UP", "title": "Increase sub color brightness", "shortName": "SubV+" },
   { "name": "V Sub DW", "title": "Decrease sub color brightness", "shortName": "SubV-" },
-
-  { "name": "Right TB Mode", "title": "Toggle right trackball mode", "shortName": "TbrCg" },
-  { "name": "Left TB Mode", "title": "Toggle left trackball mode", "shortName": "TblCg" },
-
   { "name": "Touch Key", "title": "Activate touch key mode0", "shortName": "TcKy0" },
   { "name": "Touch Key", "title": "Activate touch key mode1", "shortName": "TcKy1" },
   { "name": "Touch Key", "title": "Activate touch key mode2", "shortName": "TcKy2" },
