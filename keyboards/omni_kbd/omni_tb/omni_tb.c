@@ -474,7 +474,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             val_bg = (val_bg + 16 <= 254) ? val_bg + 16 : 254;
             break;
         case KC_val_bg_DOWN:
-            val_bg = (val_bg > 16) ? val_bg - 16 : 0;eriod
+            val_bg = (val_bg > 16) ? val_bg - 16 : 0;
             break;
         case KC_hue_main_color_UP:
             hue_main_color = (hue_main_color + 16) % 256;
@@ -512,6 +512,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case KC_val_sub_color_DOWN:
             val_sub_color = (val_sub_color > 16) ? val_sub_color - 16 : 0;
             break;
+            
         case KC_DP_MODE_CYCLE: {
             display_mode_index++;
             if (display_mode_index >= (sizeof(display_mode_order) / sizeof(display_mode_order[0]))) {
@@ -521,6 +522,31 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             apply_display_mode(next_mode);
             return false;
         }
+
+        case KC_DP_TOUCH_KEY0:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 0;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
+        case KC_DP_TOUCH_KEY1:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 1;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
+        case KC_DP_TOUCH_KEY2:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 2;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
+        case KC_DP_TOUCH_KEY3:
+            display_mode =  DISPLAY_MODE_TOUCH_KEY;
+            current_lcd_layer = 3;
+            draw_background_all_black();
+            draw_lcd_layer_category_images();
+            break;
 
         default:
             return true;

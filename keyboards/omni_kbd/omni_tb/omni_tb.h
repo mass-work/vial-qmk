@@ -29,6 +29,10 @@ enum custom_keycodes {
     KC_val_sub_color_UP,
     KC_val_sub_color_DOWN,
     KC_DP_MODE_CYCLE,
+    KC_DP_TOUCH_KEY0,
+    KC_DP_TOUCH_KEY1,
+    KC_DP_TOUCH_KEY2,
+    KC_DP_TOUCH_KEY3,
 };
 
 extern point_t circles[6];
