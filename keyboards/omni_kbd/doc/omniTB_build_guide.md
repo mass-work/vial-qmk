@@ -109,7 +109,7 @@
 
 ## 8. 動作確認
 - ファームウェアを書き込みます。  
-- [こちらからダウンロード](https://github.com/mass-work/vial-qmk/tree/dev/keyboards/omni_kbd/build) omni_kbd_omni_tb_vial.uf2 をダウンロードしてください。  
+- [こちらからダウンロード](https://github.com/mass-work/vial-qmk/tree/vial/keyboards/omni_kbd/build) omni_kbd_omni_tb_vial.uf2 をダウンロードしてください。  
 - bootを押しながらUSBケーブルを接続します。(2回目以降はUSBにつないだ状態でリセットスイッチをダブルクリックでも可です。)  
 - エクスプローラが立ち上がるので、ダウンロードしたファームウェアをドラックアンドドロップで書き込みます。  
 - 各ボタン、トラックボール(44mm：ポインター、19mm：スクロール)、タッチディスプレイのスワイプ：アローキーが反応することを確認します。  
@@ -154,9 +154,4 @@
 ## 使い方
 
 omni TBは [Vial](https://vial.rocks/) にてキーマップの変更ができます。  
-<img src="img/57.jpg" width="320">
-1. 大玉はポインター操作となります。  
-2. 小玉はキーマップに設定したキーが入力されます。  
-3. タッチディスプレイはデフォルトスワイプモードになっています。※アイコンの色はカスタムキーコードを割り当てることで、HSV指定で好きな色にカスタムできます。  
-4. 小玉/タッチディスプレイのスワイプはレイヤーに依存するため、レイヤーキーと組み合わせることで様々な入力が可能です。  
-5. その他については、omni CSと同様になります。  [こちら](https://mass-work.github.io/omni_kbd_hp/#/usage)に使い方がまとまっています。  
+[こちら](https://mass-work.github.io/omni_kbd_hp/#/usage)に使い方がまとまっています。  
