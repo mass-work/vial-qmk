@@ -109,7 +109,7 @@
 
 ## 8. 動作確認
 - ファームウェアを書き込みます。  
-- [こちらからダウンロード](https://github.com/mass-work/vial-qmk/tree/vial/keyboards/omni_kbd/build) omni_kbd_omni_tb_vial.uf2 をダウンロードしてください。  
+- [こちらからダウンロード](https://github.com/mass-work/vial-qmk/tree/vial/keyboards/omni_kbd/build) omni_tb_00_00_00_vial.uf2 をダウンロードしてください。(数値部分はバージョンにより変わります。)  
 - bootを押しながらUSBケーブルを接続します。(2回目以降はUSBにつないだ状態でリセットスイッチをダブルクリックでも可です。)  
 - エクスプローラが立ち上がるので、ダウンロードしたファームウェアをドラックアンドドロップで書き込みます。  
 - 各ボタン、トラックボール(44mm：ポインター、19mm：スクロール)、タッチディスプレイのスワイプ：アローキーが反応することを確認します。  
